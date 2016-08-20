@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import httplib2
 import sys
 import plotly.plotly as py
-import plotly.graph_objs as graphs
+# import plotly.graph_objs as graphs
 
 from apiclient.discovery import build
 from apiclient.errors import HttpError
@@ -33,6 +33,22 @@ CLIENT_SECRETS_FILES = {
     "RU": "../credentials/client_ids/client_id_RU.json",
     "UK": "../credentials/client_ids/client_id_UK.json"
 }
+
+'''
+CLIENT_SECRETS_FILES = {
+    "AU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
+    "AR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
+    "BR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_BR.json",
+    "DE": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_DE.json",
+    "FR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_FR.json",
+    "IT": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_IT.json",
+    "MX": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_MX.json",
+    "NL": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_NL.json",
+    "QC": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_NL.json",
+    "RU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_RU.json",
+    "UK": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_UK.json"
+}
+'''
 
 # list used to loop through the CLIENT_SECRETS_FILES to authenticate and get analytics
 COUNTRIES = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "QC", "RU", "UK"]
@@ -136,7 +152,7 @@ def print_report(analytics_query_response):
     '''
     parses the analytics API query response - which can be JSON or CSV - and prints relevant info.
     '''
-    print("Analytics Data for {} Channel".format(channel_id[1]))
+    print("ANALYTICS DATA FOR {}'s CHANNEL".format(channel_id[1]))
 
     for column_header in analytics_query_response.get("columnHeaders", []):
         print("{:<20}".format(column_header["name"]), end='')
@@ -148,7 +164,7 @@ def print_report(analytics_query_response):
     print("\n")
 
 
-def update_graph(views_dict):
+def update_views_pie(views_dict):
     labels = []
     values = []
 
@@ -156,35 +172,62 @@ def update_graph(views_dict):
         labels.append(key)
         values.append(value)
 
-    print('updating graph')
+    print('updating graph...\n')
 
     pie_get = py.get_figure("https://plot.ly/~allrecipes_international/2/")
     data = pie_get.data
+
+    # to construct dict for computing view differences:
+    # past_views_dict = {label: value for label, value in zip(data[0]['labels'], data[0]['values'])}
 
     data.update({'values': values, 'labels': labels})
 
     py.iplot(pie_get, filename='allrecipes_views_pie_test')
 
 
+def print_sorted_views(metrics):
+    for key in metrics.keys():
+
+        print(key.upper())
+
+        # TODO: move this out of this function
+        metrics[key]['total'] = sum(value for value in metrics[key].values())
+
+        sorted_views = sorted(metrics[key].items(), key=lambda x: x[1], reverse=True)
+        for i in range(len(sorted_views)):
+            print('{}: {:,}'.format(sorted_views[i][0], sorted_views[i][1]))
+
+        print('\n')
+
+
 if __name__ == "__main__":
-    views_dict = {}
 
     cli_args = parse_cli_arguments()
 
+    # create a list of the metric names in the report from command line arguments passed to --metrics
+    # the order of these doesn't matter because the metric names are keys in the metrics dict
+    # that hold dicts with country-specific values
+    columnHeaders = cli_args.metrics.split(',')
+    metrics = {column: {} for column in columnHeaders}
+
     for country in COUNTRIES:
+
         (youtube, youtube_analytics) = get_authenticated_services(cli_args, country)
+
         try:
             channel_id = (get_channel_id(youtube), country)
             report = run_analytics_report(youtube_analytics, channel_id, cli_args)
             print_report(report)
-            views_dict[country] = int(report['rows'][0][0])
+
+            # columnHeaders = [report['columnHeaders'][i]['name'] for i in range(len(report['columnHeaders']))]
+
+            # update dicts in metrics with country specific values corresponding to a report metric
+            for i in range(len(columnHeaders)):
+                metrics[columnHeaders[i]][country] = int(report['rows'][0][i])
+
         except HttpError as e:
             print("An HTTP error {} occurred:".format(e.resp.status))
             print("{}".format(e.content))
 
-    update_graph(views_dict)
-
-    views_dict['total'] = sum(value for value in views_dict.values())
-
-    for key, value in views_dict.items():
-        print('{}: {}'.format(key, value))
+    # update_views_pie(views_dict)
+    print_sorted_views(metrics)
