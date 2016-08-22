@@ -34,22 +34,6 @@ CLIENT_SECRETS_FILES = {
     "UK": "../credentials/client_ids/client_id_UK.json"
 }
 
-'''
-CLIENT_SECRETS_FILES = {
-    "AU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
-    "AR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
-    "BR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_BR.json",
-    "DE": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_DE.json",
-    "FR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_FR.json",
-    "IT": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_IT.json",
-    "MX": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_MX.json",
-    "NL": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_NL.json",
-    "QC": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_NL.json",
-    "RU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_RU.json",
-    "UK": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_UK.json"
-}
-'''
-
 # list used to loop through the CLIENT_SECRETS_FILES to authenticate and get analytics
 COUNTRIES = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "QC", "RU", "UK"]
 
@@ -69,7 +53,7 @@ YOUTUBE_ANALYTICS_API_VERSION = "v1"
 def parse_cli_arguments():
     now = datetime.now()
     one_day_ago = (now - timedelta(days=1)).strftime("%Y-%m-%d")
-    one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
     alltime = "2011-01-01"
 
     # argparser.add_argument("--channel-id", help="channel id", default="channel_id")
@@ -164,38 +148,66 @@ def print_report(analytics_query_response):
     print("\n")
 
 
-def update_views_pie(views_dict):
+def compute_totals(metrics_dict):
+    for key in metrics.keys():
+        metrics[key]['total'] = sum(value for value in metrics[key].values())
+
+
+def update_views_pie(metrics_dict):
     labels = []
     values = []
 
-    for key, value in views_dict.items():
-        labels.append(key)
-        values.append(value)
+    for key, value in metrics_dict['views'].items():
+        if key != 'total':
+            labels.append(key)
+            values.append(value)
 
-    print('updating graph...\n')
+    print('updating pie...\n')
 
     pie_get = py.get_figure("https://plot.ly/~allrecipes_international/2/")
     data = pie_get.data
 
-    # to construct dict for computing view differences:
+    # to construct dict for computing view differences from last update:
     # past_views_dict = {label: value for label, value in zip(data[0]['labels'], data[0]['values'])}
 
     data.update({'values': values, 'labels': labels})
 
-    py.iplot(pie_get, filename='allrecipes_views_pie_test')
+    py.plot(pie_get, filename='youtube channel views pie', auto_open=False)
 
 
-def print_sorted_views(metrics):
-    for key in metrics.keys():
+def update_views_graph(metrics_dict):
+    # this function relies on 'total' being a key in the metrics['views'] dict
+
+    print("updating graph...\n")
+
+    sorted_views = sort_metrics(metrics_dict, 'views')
+    x = [sorted_views[i][0] for i in range(len(sorted_views)) if sorted_views[i][0] != 'total']
+    y = [sorted_views[i][1] for i in range(len(sorted_views)) if sorted_views[i][0] != 'total']
+    total_views = 'TOTAL VIEWS: ' + '{:,}'.format(metrics_dict['views']['total'])
+
+    views_graph = py.get_figure("https://plot.ly/~allrecipes_international/4/")
+    views_graph_annotations = views_graph.layout.annotations
+    views_graph_data = views_graph.data
+
+    views_graph_data.update({'x': x, 'y': y})
+    views_graph_annotations.update({'text': total_views})
+
+    py.plot(views_graph, filename='youtube channel views graph', auto_open=False)
+
+
+def sort_metrics(metrics_dict, key):
+
+    return sorted(metrics_dict[key].items(), key=lambda x: x[1], reverse=True)
+
+
+def print_sorted_metrics(metrics_dict):
+    for key in metrics_dict.keys():
 
         print(key.upper())
 
-        # TODO: move this out of this function
-        metrics[key]['total'] = sum(value for value in metrics[key].values())
-
-        sorted_views = sorted(metrics[key].items(), key=lambda x: x[1], reverse=True)
-        for i in range(len(sorted_views)):
-            print('{}: {:,}'.format(sorted_views[i][0], sorted_views[i][1]))
+        sorted_metrics = sort_metrics(metrics_dict, key)
+        for i in range(len(sorted_metrics)):
+            print('{}: {:,}'.format(sorted_metrics[i][0], sorted_metrics[i][1]))
 
         print('\n')
 
@@ -229,5 +241,8 @@ if __name__ == "__main__":
             print("An HTTP error {} occurred:".format(e.resp.status))
             print("{}".format(e.content))
 
-    # update_views_pie(views_dict)
-    print_sorted_views(metrics)
+    # print(metrics)
+    compute_totals(metrics)
+    update_views_pie(metrics)
+    update_views_graph(metrics)
+    print_sorted_metrics(metrics)
