@@ -46,7 +46,7 @@ youtube_scopes = ["https://www.googleapis.com/auth/youtube.readonly",
                   ]
 
 
-class AuthenticatedAnalytics(object):
+class AuthenticatedQueries(object):
     '''
     authenticate to youtube data api and youtube analytics api with oauth2,
     get and return an analytics query response
@@ -198,11 +198,9 @@ class Analytics(object):
         total_views = 'TOTAL VIEWS: ' + '{:,}'.format(self.metrics['views']['total'])
 
         views_graph = py.get_figure("https://plot.ly/~allrecipes_international/4/")
-        views_graph_annotations = views_graph.layout.annotations
-        views_graph_data = views_graph.data
 
-        views_graph_data.update({'x': x, 'y': y})
-        views_graph_annotations.update({'text': total_views})
+        views_graph.data.update({'x': x, 'y': y})
+        views_graph.layout.annotations.update({'text': total_views})
 
         py.plot(views_graph, filename='youtube channel views graph', auto_open=False)
 
@@ -224,26 +222,24 @@ class Analytics(object):
 
 if __name__ == "__main__":
 
-    authenticated_analytics = AuthenticatedAnalytics(client_secrets_files, youtube_scopes)
-    authenticated_analytics.parse_cli_arguments()
+    authenticated_queries = AuthenticatedQueries(client_secrets_files, youtube_scopes)
+    authenticated_queries.parse_cli_arguments()
 
     # create a list of the metric names in the report from command line arguments passed to --metrics
     # the order of these doesn't matter because the metric names are keys in the metrics dict
-    columnHeaders = authenticated_analytics.args.metrics.split(',')
+    columnHeaders = authenticated_queries.args.metrics.split(',')
 
     analytics = Analytics()
     analytics.metrics = {column: {} for column in columnHeaders}
 
     for country in countries:
 
-        authenticated_analytics.get_authenticated_services(country)
+        authenticated_queries.get_authenticated_services(country)
 
         try:
-            authenticated_analytics.get_channel_id()
-            report = authenticated_analytics.run_analytics_report()
-            authenticated_analytics.print_report(country)
-
-            # columnHeaders = [report['columnHeaders'][i]['name'] for i in range(len(report['columnHeaders']))]
+            authenticated_queries.get_channel_id()
+            report = authenticated_queries.run_analytics_report()
+            authenticated_queries.print_report(country)
 
             # update dicts in metrics with country specific values corresponding to a report metric
             for i in range(len(columnHeaders)):
