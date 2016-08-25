@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import httplib2
 # import sys
 import plotly.plotly as py
-# import plotly.graph_objs as graphs
+import plotly.graph_objs as go
 
 from apiclient.discovery import build
 from apiclient.errors import HttpError
@@ -167,6 +167,8 @@ class Analytics(object):
             self.metrics[key]['total'] = sum(value for value in self.metrics[key].values())
 
     def update_views_pie(self):
+        print('updating views pie...\n')
+
         labels = []
         values = []
 
@@ -174,8 +176,6 @@ class Analytics(object):
             if key != 'total':
                 labels.append(key)
                 values.append(value)
-
-        print('updating pie...\n')
 
         pie_get = py.get_figure("https://plot.ly/~allrecipes_international/2/")
         data = pie_get.data
@@ -190,7 +190,7 @@ class Analytics(object):
     def update_views_graph(self):
         # this function relies on 'total' being a key in the metrics['views'] dict
 
-        print("updating graph...\n")
+        print("updating views graph...\n")
 
         sorted_views = self.sort_metrics('views')
         x = [sorted_views[i][0] for i in range(len(sorted_views)) if sorted_views[i][0] != 'total']
@@ -203,6 +203,112 @@ class Analytics(object):
         views_graph.layout.annotations.update({'text': total_views})
 
         py.plot(views_graph, filename='youtube channel views graph', auto_open=False)
+
+    def update_engagement_bars(self):
+        # most code taken from horizontal bars graph example page on plotly
+
+        print("updating engagement bars... \n")
+
+        top_labels = ['comments', 'likes', 'dislikes', 'shares']
+        colors = ['#8dd3c7', '#bebada', '#fb8072', '80b1d3']
+
+        x_data = []
+        x_data_raw = []
+        y_data = countries[:] + ['total']
+        y_data.reverse()
+
+        for thing in y_data:
+            x_data_raw.append([self.metrics[label][thing] for label in top_labels])
+
+        for item in x_data_raw:
+            x_data.append([round(quantity / sum(item) * 100) for quantity in item])
+
+        traces = []
+
+        for i in range(0, len(x_data[0])):
+            for xd, yd in zip(x_data, y_data):
+                traces.append(go.Bar(
+                    x=xd[i],
+                    y=yd,
+                    orientation='h',
+                    marker=dict(
+                        color=colors[i],
+                        line=dict(
+                                color='rgb(248, 248, 249)',
+                                width=1)
+                    )
+                ))
+
+        annotations = []
+
+        for yd, xd in zip(y_data, x_data):
+            # labeling the y-axis
+            annotations.append(dict(xref='paper', yref='y',
+                                    x=0.14, y=yd,
+                                    xanchor='right',
+                                    text=str(yd),
+                                    font=dict(family='Arial', size=14,
+                                              color='rgb(67, 67, 67)'),
+                                    showarrow=False, align='right'))
+            # labeling the first percentage of each bar (x_axis)
+            annotations.append(dict(xref='x', yref='y',
+                                    x=xd[0] / 2, y=yd,
+                                    text=str(xd[0]) + '%',
+                                    font=dict(family='Arial', size=14,
+                                              color='rgb(248, 248, 255)'),
+                                    showarrow=False))
+            # labeling the first Likert scale (on the top)
+            if yd == y_data[-1]:
+                annotations.append(dict(xref='x', yref='paper',
+                                        x=xd[0] / 2, y=1.1,
+                                        text=top_labels[0],
+                                        font=dict(family='Arial', size=14,
+                                                  color='rgb(67, 67, 67)'),
+                                        showarrow=False))
+            space = xd[0]
+            for i in range(1, len(xd)):
+                    # labeling the rest of percentages for each bar (x_axis)
+                    annotations.append(dict(xref='x', yref='y',
+                                            x=space + (xd[i]/2), y=yd,
+                                            text=str(xd[i]) + '%',
+                                            font=dict(family='Arial', size=14,
+                                                      color='rgb(248, 248, 255)'),
+                                            showarrow=False))
+                    # labeling the Likert scale
+                    if yd == y_data[-1]:
+                        annotations.append(dict(xref='x', yref='paper',
+                                                x=space + (xd[i]/2), y=1.1,
+                                                text=top_labels[i],
+                                                font=dict(family='Arial', size=14,
+                                                          color='rgb(67, 67, 67)'),
+                                                showarrow=False))
+                    space += xd[i]
+
+        engagement_graph = py.get_figure('https://plot.ly/~allrecipes_international/10')
+        layout = engagement_graph.layout
+        layout['annotations'] = annotations
+
+        fig = go.Figure(data=traces, layout=layout)
+        py.plot(fig, filename='engagement bars', auto_open=False)
+
+    def update_subscriber_bars(self):
+        pass
+        '''
+        print('updating subscriber bars...\n')
+
+        y_data = countries[:]
+        y_data.reverse()
+
+        gained = [self.metrics['subscribersGained'][thing] for thing in y_data]
+        lost = [self.metrics['subscribersLost'][thing] for thing in y_data]
+
+        subscriber_bars = py.get_figure('https://plot.ly/~allrecipes_international/16')
+
+        subscriber_bars.data[0].x = gained
+        subscriber_bars.data[1].x = lost
+
+        py.plot(subscriber_bars, filename='subscriber bars', auto_open=False)
+        '''
 
     def sort_metrics(self, key):
 
@@ -241,7 +347,7 @@ if __name__ == "__main__":
             report = authenticated_queries.run_analytics_report()
             authenticated_queries.print_report(country)
 
-            # update dicts in metrics with country specific values corresponding to a report metric
+            # update dicts in metrics with country specific values
             for i in range(len(columnHeaders)):
                 analytics.metrics[columnHeaders[i]][country] = int(report['rows'][0][i])
 
@@ -249,8 +355,9 @@ if __name__ == "__main__":
             print("An HTTP error {} occurred:".format(e.resp.status))
             print("{}".format(e.content))
 
-    # print(analytics.metrics)
     analytics.compute_totals()
-    analytics.update_views_pie()
-    analytics.update_views_graph()
+    # analytics.update_views_pie()
+    # analytics.update_views_graph()
+    # analytics.update_engagement_bars()
+    # analytics.update_subscriber_bars()
     analytics.print_sorted_metrics()
