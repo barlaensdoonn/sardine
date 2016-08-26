@@ -67,16 +67,11 @@ class AuthenticatedQueries(object):
         # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         alltime = "2011-01-01"
 
-        # argparser.add_argument("--channel-id", help="channel id", default="channel_id")
-        # argparser.add_argument("content-owner-id", help="content owner id")
-
         # other callable metrics: estimatedMinutesWatched,averageViewDuration,averageViewPercentage,estimatedRevenue,cardClickRate
         argparser.add_argument("--metrics", default="views,comments,likes,dislikes,shares,subscribersGained,subscribersLost", help="Report metrics")
-        # argparser.add_argument("--dimensions", help="Report dimensions", default="video")
         argparser.add_argument("--start-date", default=alltime, help="Start date, in YYYY-MM-DD format")
         argparser.add_argument("--end-date", default=one_day_ago, help="End date, in YYYY-MM-DD format")
         argparser.add_argument("--alt", default="json", help="format for report, either 'json' or 'csv'")
-        # argparser.add_argument("--max-results", help="Max results", default=10)
         argparser.add_argument("--sort", default="-views", help="Sort order")
 
         self.args = argparser.parse_args()
