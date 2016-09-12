@@ -162,6 +162,34 @@ class Analytics(object):
         for key in self.metrics.keys():
             self.metrics[key]['total'] = sum(value for value in self.metrics[key].values())
 
+    def sort_metrics(self, key):
+
+        return sorted(self.metrics[key].items(), key=lambda x: x[1], reverse=True)
+
+    def print_sorted_metrics(self):
+        for key in self.metrics.keys():
+
+            print(key.upper())
+
+            sorted_metrics = self.sort_metrics(key)
+            for i in range(len(sorted_metrics)):
+                print('{}: {:,}'.format(sorted_metrics[i][0], sorted_metrics[i][1]))
+
+            print('\n')
+
+
+class Plotter(object):
+    '''
+    holds functions for updating graphs
+    '''
+
+    def __init__(self, metrics):
+        self.metrics = metrics
+
+    def sort_metrics(self, key):
+
+        return sorted(self.metrics[key].items(), key=lambda x: x[1], reverse=True)
+
     def update_views_pie(self):
         print('updating views pie...\n')
 
@@ -199,6 +227,25 @@ class Analytics(object):
         views_graph.layout.annotations.update({'text': total_views})
 
         py.plot(views_graph, filename='youtube channel views graph', auto_open=False)
+
+    def update_subscriber_bars(self):
+        pass
+        '''
+        print('updating subscriber bars...\n')
+
+        y_data = countries[:]
+        y_data.reverse()
+
+        gained = [self.metrics['subscribersGained'][thing] for thing in y_data]
+        lost = [self.metrics['subscribersLost'][thing] for thing in y_data]
+
+        subscriber_bars = py.get_figure('https://plot.ly/~allrecipes_international/16')
+
+        subscriber_bars.data[0].x = gained
+        subscriber_bars.data[1].x = lost
+
+        py.plot(subscriber_bars, filename='subscriber bars', auto_open=False)
+        '''
 
     def update_engagement_bars(self):
         # most code taken from horizontal bars graph example page on plotly
@@ -287,40 +334,6 @@ class Analytics(object):
         fig = go.Figure(data=traces, layout=layout)
         py.plot(fig, filename='engagement bars', auto_open=False)
 
-    def update_subscriber_bars(self):
-        pass
-        '''
-        print('updating subscriber bars...\n')
-
-        y_data = countries[:]
-        y_data.reverse()
-
-        gained = [self.metrics['subscribersGained'][thing] for thing in y_data]
-        lost = [self.metrics['subscribersLost'][thing] for thing in y_data]
-
-        subscriber_bars = py.get_figure('https://plot.ly/~allrecipes_international/16')
-
-        subscriber_bars.data[0].x = gained
-        subscriber_bars.data[1].x = lost
-
-        py.plot(subscriber_bars, filename='subscriber bars', auto_open=False)
-        '''
-
-    def sort_metrics(self, key):
-
-        return sorted(self.metrics[key].items(), key=lambda x: x[1], reverse=True)
-
-    def print_sorted_metrics(self):
-        for key in self.metrics.keys():
-
-            print(key.upper())
-
-            sorted_metrics = self.sort_metrics(key)
-            for i in range(len(sorted_metrics)):
-                print('{}: {:,}'.format(sorted_metrics[i][0], sorted_metrics[i][1]))
-
-            print('\n')
-
 
 if __name__ == "__main__":
 
@@ -352,8 +365,10 @@ if __name__ == "__main__":
             print("{}".format(e.content))
 
     analytics.compute_totals()
-    # analytics.update_views_pie()
-    # analytics.update_views_graph()
-    # analytics.update_engagement_bars()
+
+    plotter = Plotter(analytics.metrics)
+    # plotter.update_views_pie()
+    # plotter.update_views_graph()
+    # plotter.update_engagement_bars()
     # analytics.update_subscriber_bars()
     analytics.print_sorted_metrics()
