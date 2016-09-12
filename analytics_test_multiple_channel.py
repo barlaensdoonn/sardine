@@ -25,18 +25,18 @@ from oauth2client.tools import argparser, run_flow
 countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
 
 client_secrets_files = {
-    "AU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
-    "AR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_AU.json",
-    "BR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_BR.json",
-    "DE": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_DE.json",
-    "FR": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_FR.json",
-    "IT": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_IT.json",
-    "MX": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_MX.json",
-    "NL": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_NL.json",
-    "PL": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_PL.json",
-    "QC": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_QC.json",
-    "RU": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_RU.json",
-    "UK": "/Users/kestrel/gitBucket/youtube_analytics/credentials/client_ids/client_id_UK.json"
+    "AU": "../credentials/client_ids/client_id_AU.json",
+    "AR": "../credentials/client_ids/client_id_AU.json",
+    "BR": "../credentials/client_ids/client_id_BR.json",
+    "DE": "../credentials/client_ids/client_id_DE.json",
+    "FR": "../credentials/client_ids/client_id_FR.json",
+    "IT": "../credentials/client_ids/client_id_IT.json",
+    "MX": "../credentials/client_ids/client_id_MX.json",
+    "NL": "../credentials/client_ids/client_id_NL.json",
+    "PL": "../credentials/client_ids/client_id_PL.json",
+    "QC": "../credentials/client_ids/client_id_QC.json",
+    "RU": "../credentials/client_ids/client_id_RU.json",
+    "UK": "../credentials/client_ids/client_id_UK.json"
 }
 
 # These OAuth 2.0 access scopes allow for read-only access to the authenticated
@@ -98,7 +98,7 @@ class AuthenticatedQueries(object):
                                        scope=" ".join(youtube_scopes),
                                        message=missing_clients_secrets_message)
 
-        storage = Storage("/Users/kestrel/gitBucket/youtube_analytics/credentials/oaths/{}-{}-oauth2.json".format("analytics_test_multiple_channel.py", oauth_file_path))
+        storage = Storage("../credentials/oaths/{}-{}-oauth2.json".format("analytics_test_multiple_channel.py", oauth_file_path))
         credentials = storage.get()
 
         if credentials is None or credentials.invalid:
