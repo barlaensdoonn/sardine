@@ -75,7 +75,7 @@ def authenticate():
     gc = gspread.authorize(credentials)
 
     sheet = gc.open("Allrecipes Master Video List")
-    master_list_pending = sheet.get_worksheet(0)
+    master_list_pending = sheet.worksheet('Localization Pending')
 
     return master_list_pending
 
@@ -93,8 +93,6 @@ def replace_chars(string):
 
 
 def get_sheet_names(spreadsheet):
-    print('generating sheet_names dict...')
-
     sheet_names = {}
     video_names = spreadsheet.col_values(1)
 
