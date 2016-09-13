@@ -56,12 +56,7 @@ country_columns = {
     "UK": 4
 }
 
-stats = {
-    "copy": [],
-    "copy_zip": [],
-    "copy_zip_US": [],
-    "not found": [],
-}
+flags = ['copy', 'copy_zip', 'copy_zip_US', 'not_found']
 
 
 def authenticate():
@@ -69,6 +64,8 @@ def authenticate():
     authenticates account with Google drive
     returns a tuple of the Pending tab and the archived by robot spreadsheet from the Master List
     '''
+    print('authenticating to Google Sheets...\n')
+
     scope = ['https://spreadsheets.google.com/feeds']
     credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/baleson/Documents/credentials/googleAuth/spreadsheet-access-5092af4cc743.json', scope)
 
@@ -76,8 +73,10 @@ def authenticate():
 
     sheet = gc.open("Allrecipes Master Video List")
     master_list_pending = sheet.worksheet('Localization Pending')
+    master_list_completed = sheet.worksheet('Localization Completed')
+    master_list_completed_US = sheet.worksheet('Localization Completed - US Videos')
 
-    return master_list_pending
+    return master_list_pending, master_list_completed, master_list_completed_US
 
 
 def replace_chars(string):
@@ -155,7 +154,7 @@ def find_archive_path(archive_paths, vid_name, file_name):
     if no Exports/localizedVP9 directory exists, one is made
     if it finds /vid_name/Exports/localized, returns dst_file with the full dir plus "copy" skip flag
     - - if above is found on Video_Localized then flag is "copy_zip" or "copy_zip_US" depending on directory - -
-    if it doesn't find /vid_name anywhere, returns dst_file with no_copy_dir plus "not found" skip flag
+    if it doesn't find /vid_name anywhere, returns dst_file with no_copy_dir plus "not_found" skip flag
     '''
     for key in archive_paths:
         for dir in os.scandir(archive_paths[key]):
@@ -190,7 +189,7 @@ def find_archive_path(archive_paths, vid_name, file_name):
 
     else:
         print("didn't find {} anywhere".format(file_name))
-        flag = "not found"
+        flag = "not_found"
         backup_src = None
         dst_file = os.path.join(no_copy_dir, file_name)
 
@@ -253,8 +252,10 @@ def printReport(stats):
 
 
 if __name__ == '__main__':
-    spreadsheet = authenticate()
-    sheet_names = get_sheet_names(spreadsheet)
+    stats = {flags[i]: [] for i in range(len(flags))}
+
+    spreadsheets = authenticate()
+    sheet_names_dict = {flags[i]: get_sheet_names(spreadsheets[i]) for i in range(len(spreadsheets))}
 
     cleaned_lists = clean_up(src_dir)
     vid_dict = get_filenames(*cleaned_lists)
@@ -264,12 +265,12 @@ if __name__ == '__main__':
         vid_name = vid_dict[key][0]
         country = vid_dict[key][1]
         src_file = vid_dict[key][2]
-        archive_path, backup_src, task = find_archive_path(archive_paths, vid_name, file_name)
+        archive_path, backup_src, flag = find_archive_path(archive_paths, vid_name, file_name)
         country_path = find_country_path(country, file_name)
-        copy(file_name, src_file, archive_path, backup_src, task, country_path)
+        copy(file_name, src_file, archive_path, backup_src, flag, country_path)
 
         try:
-            update_sheet(spreadsheet, sheet_names, vid_name, country)
+            update_sheet(spreadsheets[flag], sheet_names_dict[flag], vid_name, country)
         except Exception as e:
             print(e)
 
