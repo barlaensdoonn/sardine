@@ -35,7 +35,7 @@ def authenticate():
     gc = gspread.authorize(credentials)
 
     sheet = gc.open("Allrecipes Master Video List")
-    master_list_pending = sheet.get_worksheet(0)
+    master_list_pending = sheet.worksheet('Localization Pending')
     archived_by_robot = sheet.worksheet('archived by robot')
 
     return master_list_pending, archived_by_robot
