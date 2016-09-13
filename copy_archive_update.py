@@ -267,6 +267,10 @@ if __name__ == '__main__':
         archive_path, backup_src, task = find_archive_path(archive_paths, vid_name, file_name)
         country_path = find_country_path(country, file_name)
         copy(file_name, src_file, archive_path, backup_src, task, country_path)
-        update_sheet(spreadsheet, sheet_names, vid_name, country)
+
+        try:
+            update_sheet(spreadsheet, sheet_names, vid_name, country)
+        except Exception as e:
+            print(e)
 
     printReport(stats)
