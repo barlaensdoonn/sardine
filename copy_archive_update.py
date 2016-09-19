@@ -270,6 +270,7 @@ if __name__ == '__main__':
         country_path = find_country_path(country, file_name)
         copy(file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        update_sheet(sheets_dict[flag], sheet_names_dict[flag], vid_name.lower(), country)
+        if flag != 'not_found':
+            update_sheet(sheets_dict[flag], sheet_names_dict[flag], vid_name.lower(), country)
 
     printReport(stats)
