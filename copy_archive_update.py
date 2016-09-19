@@ -269,9 +269,6 @@ if __name__ == '__main__':
         country_path = find_country_path(country, file_name)
         copy(file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        try:
-            update_sheet(spreadsheets[flag], sheet_names_dict[flag], vid_name, country)
-        except Exception as e:
-            print(e)
+        update_sheet(spreadsheets[flag], sheet_names_dict[flag], vid_name, country)
 
     printReport(stats)
