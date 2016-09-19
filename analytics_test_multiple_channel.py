@@ -1,4 +1,4 @@
-#!/Library/Frameworks/Python.framework/Versions/3.5/bin/python3
+#!/usr/local/bin/python3
 
 from datetime import datetime, timedelta
 import httplib2
@@ -98,6 +98,7 @@ class AuthenticatedQueries(object):
                                        scope=" ".join(youtube_scopes),
                                        message=missing_clients_secrets_message)
 
+        # TODO: make this more generic by not using script name to make file name
         storage = Storage("../credentials/oaths/{}-{}-oauth2.json".format("analytics_test_multiple_channel.py", oauth_file_path))
         credentials = storage.get()
 
@@ -118,15 +119,15 @@ class AuthenticatedQueries(object):
         '''
         Call the Analytics API to retrieve a report. For a list of available reports,
         see: https://developers.google.com/youtube/analytics/v1/channel_reports
+
+        the query parameters should correspond to args in parse_cli_arguments()
         '''
         self.analytics_query_response = self.youtube_analytics.reports().query(
             ids="channel=={}".format(self.channel_id),
             metrics=self.args.metrics,
-            # dimensions=options.dimensions,
             start_date=self.args.start_date,
             end_date=self.args.end_date,
             alt=self.args.alt,
-            # max_results=options.max_results,
             sort=self.args.sort
         ).execute()
 
@@ -365,10 +366,16 @@ if __name__ == "__main__":
             print("{}".format(e.content))
 
     analytics.compute_totals()
-
     plotter = Plotter(analytics.metrics)
-    # plotter.update_views_pie()
-    # plotter.update_views_graph()
-    # plotter.update_engagement_bars()
-    # analytics.update_subscriber_bars()
+
+    try:
+        pass
+        # plotter.update_views_pie()
+        # plotter.update_views_graph()
+        # plotter.update_engagement_bars()
+        # plotter.update_subscriber_bars()
+
+    except Exception as e:
+        print(e)
+
     analytics.print_sorted_metrics()
