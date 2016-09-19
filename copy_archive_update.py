@@ -98,7 +98,7 @@ def get_sheet_names(spreadsheet):
     for item in video_names:
         if item != '':
             if not item.isupper():
-                name = replace_chars(item)
+                name = replace_chars(item).lower()
                 sheet_names[name] = item
 
     return sheet_names
@@ -256,6 +256,7 @@ if __name__ == '__main__':
 
     spreadsheets = authenticate()
     sheet_names_dict = {flags[i]: get_sheet_names(spreadsheets[i]) for i in range(len(spreadsheets))}
+    sheets_dict = {flags[i]: spreadsheets[i] for i in range(len(spreadsheets))}
 
     cleaned_lists = clean_up(src_dir)
     vid_dict = get_filenames(*cleaned_lists)
@@ -269,6 +270,6 @@ if __name__ == '__main__':
         country_path = find_country_path(country, file_name)
         copy(file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        update_sheet(spreadsheets[flag], sheet_names_dict[flag], vid_name, country)
+        update_sheet(sheets_dict[flag], sheet_names_dict[flag], vid_name.lower(), country)
 
     printReport(stats)
