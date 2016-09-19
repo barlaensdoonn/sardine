@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta
 import httplib2
-# import sys
 import plotly.plotly as py
 import plotly.graph_objs as go
 
@@ -13,44 +12,12 @@ from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
 
-# The CLIENT_SECRETS_FILE variable specifies the name of a file that contains
-# the OAuth 2.0 information for this application, including its client_id and
-# client_secret. You can acquire an OAuth 2.0 client ID and client secret from
-# the {{ Google Cloud Console }} at {{ https://cloud.google.com/console }}.
-# Please ensure that you have enabled the YouTube Data and YouTube Analytics APIs for your project.
-# For more information about using OAuth2 to access the YouTube Data API, see: https://developers.google.com/youtube/v3/guides/authentication
-# For more information about the client_secrets.json file format, see: https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-
-# list used to loop through the client_secrets_files to authenticate and get analytics report
 countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
 
-client_secrets_files = {
-    "AU": "../credentials/client_ids/client_id_AU.json",
-    "AR": "../credentials/client_ids/client_id_AU.json",
-    "BR": "../credentials/client_ids/client_id_BR.json",
-    "DE": "../credentials/client_ids/client_id_DE.json",
-    "FR": "../credentials/client_ids/client_id_FR.json",
-    "IT": "../credentials/client_ids/client_id_IT.json",
-    "MX": "../credentials/client_ids/client_id_MX.json",
-    "NL": "../credentials/client_ids/client_id_NL.json",
-    "PL": "../credentials/client_ids/client_id_PL.json",
-    "QC": "../credentials/client_ids/client_id_QC.json",
-    "RU": "../credentials/client_ids/client_id_RU.json",
-    "UK": "../credentials/client_ids/client_id_UK.json"
-}
 
-# These OAuth 2.0 access scopes allow for read-only access to the authenticated
-# user's account for both YouTube Data API resources and YouTube Analytics Data.
-youtube_scopes = ["https://www.googleapis.com/auth/youtube.readonly",
-                  "https://www.googleapis.com/auth/yt-analytics.readonly",
-                  # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
-                  ]
-
-
-class AuthenticatedQueries(object):
+class Authenticate(object):
     '''
-    authenticate to youtube data api and youtube analytics api with oauth2,
-    get and return an analytics query response
+    authenticate to youtube data api and youtube analytics api with oauth2
     '''
 
     youtube_api_service_name = "youtube"
@@ -58,24 +25,28 @@ class AuthenticatedQueries(object):
     youtube_analytics_api_service_name = "youtubeAnalytics"
     youtube_analytics_api_version = "v1"
 
-    def __init__(self, secrets_files, scopes):
-        self.secrets_files = secrets_files
-        self.scopes = scopes
+    def __init__(self):
+        self.secrets_files = {
+            "AU": "../credentials/client_ids/client_id_AU.json",
+            "AR": "../credentials/client_ids/client_id_AU.json",
+            "BR": "../credentials/client_ids/client_id_BR.json",
+            "DE": "../credentials/client_ids/client_id_DE.json",
+            "FR": "../credentials/client_ids/client_id_FR.json",
+            "IT": "../credentials/client_ids/client_id_IT.json",
+            "MX": "../credentials/client_ids/client_id_MX.json",
+            "NL": "../credentials/client_ids/client_id_NL.json",
+            "PL": "../credentials/client_ids/client_id_PL.json",
+            "QC": "../credentials/client_ids/client_id_QC.json",
+            "RU": "../credentials/client_ids/client_id_RU.json",
+            "UK": "../credentials/client_ids/client_id_UK.json"
+        }
 
-    def parse_cli_arguments(self):
-        now = datetime.now()
-        one_day_ago = (now - timedelta(days=1)).strftime("%Y-%m-%d")
-        # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
-        alltime = "2011-01-01"
-
-        # other callable metrics: estimatedMinutesWatched,averageViewDuration,averageViewPercentage,estimatedRevenue,cardClickRate
-        argparser.add_argument("--metrics", default="views,comments,likes,dislikes,shares,subscribersGained,subscribersLost", help="Report metrics")
-        argparser.add_argument("--start-date", default=alltime, help="Start date, in YYYY-MM-DD format")
-        argparser.add_argument("--end-date", default=one_day_ago, help="End date, in YYYY-MM-DD format")
-        argparser.add_argument("--alt", default="json", help="format for report, either 'json' or 'csv'")
-        argparser.add_argument("--sort", default="-views", help="Sort order")
-
-        self.args = argparser.parse_args()
+        # These OAuth 2.0 access scopes allow for read-only access to the authenticated
+        # user's account for both YouTube Data API resources and YouTube Analytics Data.
+        self.scopes = ["https://www.googleapis.com/auth/youtube.readonly",
+                       "https://www.googleapis.com/auth/yt-analytics.readonly",
+                       # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
+                       ]
 
     def get_authenticated_services(self, oauth_file_path):
         # This variable defines a message to display if the CLIENT_SECRETS_FILE is missing.
@@ -92,10 +63,10 @@ class AuthenticatedQueries(object):
 
         For more information about the client_secrets.json file format, please visit:
         https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-        """.format(client_secrets_files[oauth_file_path])
+        """.format(self.secrets_files[oauth_file_path])
 
-        flow = flow_from_clientsecrets(client_secrets_files[oauth_file_path],
-                                       scope=" ".join(youtube_scopes),
+        flow = flow_from_clientsecrets(self.secrets_files[oauth_file_path],
+                                       scope=" ".join(self.scopes),
                                        message=missing_clients_secrets_message)
 
         # TODO: make this more generic by not using script name to make file name
@@ -109,6 +80,33 @@ class AuthenticatedQueries(object):
 
         self.youtube = build(self.youtube_api_service_name, self.youtube_api_version, http=http)
         self.youtube_analytics = build(self.youtube_analytics_api_service_name, self.youtube_analytics_api_version, http=http)
+
+        return (self.youtube, self.youtube_analytics)
+
+
+class Query(object):
+    '''
+    run youtube analytics query
+    '''
+
+    def __init__(self):
+        self.youtube = None
+        self.youtube_analytics = None
+
+    def parse_cli_arguments(self):
+        now = datetime.now()
+        one_day_ago = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+        # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+        alltime = "2011-01-01"
+
+        # other callable metrics: estimatedMinutesWatched,averageViewDuration,averageViewPercentage,estimatedRevenue,cardClickRate
+        argparser.add_argument("--metrics", default="views,comments,likes,dislikes,shares,subscribersGained,subscribersLost", help="Report metrics")
+        argparser.add_argument("--start-date", default=alltime, help="Start date, in YYYY-MM-DD format")
+        argparser.add_argument("--end-date", default=one_day_ago, help="End date, in YYYY-MM-DD format")
+        argparser.add_argument("--alt", default="json", help="format for report, either 'json' or 'csv'")
+        argparser.add_argument("--sort", default="-views", help="Sort order")
+
+        self.args = argparser.parse_args()
 
     def get_channel_id(self):
         self.channels_list_response = self.youtube.channels().list(mine=True, part="id").execute()
@@ -338,24 +336,24 @@ class Plotter(object):
 
 if __name__ == "__main__":
 
-    authenticated_queries = AuthenticatedQueries(client_secrets_files, youtube_scopes)
-    authenticated_queries.parse_cli_arguments()
+    authenticated = Authenticate()
+    metrics_query = Query()
+    metrics_query.parse_cli_arguments()
 
     # create a list of the metric names in the report from command line arguments passed to --metrics
     # the order of these doesn't matter because the metric names are keys in the metrics dict
-    columnHeaders = authenticated_queries.args.metrics.split(',')
+    columnHeaders = metrics_query.args.metrics.split(',')
 
     analytics = Analytics()
     analytics.metrics = {column: {} for column in columnHeaders}
 
     for country in countries:
 
-        authenticated_queries.get_authenticated_services(country)
-
         try:
-            authenticated_queries.get_channel_id()
-            report = authenticated_queries.run_analytics_report()
-            authenticated_queries.print_report(country)
+            metrics_query.youtube, metrics_query.youtube_analytics = authenticated.get_authenticated_services(country)
+            metrics_query.get_channel_id()
+            report = metrics_query.run_analytics_report()
+            metrics_query.print_report(country)
 
             # update dicts in metrics with country specific values
             for i in range(len(columnHeaders)):
