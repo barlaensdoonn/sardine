@@ -37,6 +37,10 @@ class AuthenticatedQueries(object):
     youtube_analytics_api_version = "v1"
 
     def __init__(self):
+        self.now = datetime.now()
+        self.one_day_ago = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
+        self.alltime = "2011-01-01"
+
         self.secrets_files = {
             "AU": "../credentials/client_ids/client_id_AU.json",
             "AR": "../credentials/client_ids/client_id_AU.json",
@@ -51,25 +55,26 @@ class AuthenticatedQueries(object):
             "RU": "../credentials/client_ids/client_id_RU.json",
             "UK": "../credentials/client_ids/client_id_UK.json"
         }
+
         self.scopes = ["https://www.googleapis.com/auth/youtube.readonly",
                        "https://www.googleapis.com/auth/yt-analytics.readonly",
                        # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
                        ]
 
-    def parse_cli_arguments(self):
-        now = datetime.now()
-        one_day_ago = (now - timedelta(days=1)).strftime("%Y-%m-%d")
-        # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
-        alltime = "2011-01-01"
-
-        # other callable metrics: estimatedMinutesWatched,averageViewDuration,averageViewPercentage,estimatedRevenue,cardClickRate
-        argparser.add_argument("--metrics", default="views,comments,likes,dislikes,shares,subscribersGained,subscribersLost", help="Report metrics")
-        argparser.add_argument("--start-date", default=alltime, help="Start date, in YYYY-MM-DD format")
-        argparser.add_argument("--end-date", default=one_day_ago, help="End date, in YYYY-MM-DD format")
-        argparser.add_argument("--alt", default="json", help="format for report, either 'json' or 'csv'")
-        argparser.add_argument("--sort", default="-views", help="Sort order")
-
-        self.args = argparser.parse_args()
+    # def parse_cli_arguments(self):
+    #     now = datetime.now()
+    #     one_day_ago = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    #     # one_week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
+    #     alltime = "2011-01-01"
+    #
+    #     # other callable metrics: estimatedMinutesWatched,averageViewDuration,averageViewPercentage,estimatedRevenue,cardClickRate
+    #     argparser.add_argument("--metrics", default="views,comments,likes,dislikes,shares,subscribersGained,subscribersLost", help="Report metrics")
+    #     argparser.add_argument("--start-date", default=alltime, help="Start date, in YYYY-MM-DD format")
+    #     argparser.add_argument("--end-date", default=one_day_ago, help="End date, in YYYY-MM-DD format")
+    #     argparser.add_argument("--alt", default="json", help="format for report, either 'json' or 'csv'")
+    #     argparser.add_argument("--sort", default="-views", help="Sort order")
+    #
+    #     self.args = argparser.parse_args()
 
     def get_authenticated_services(self, oauth_file_path):
         # This variable defines a message to display if the CLIENT_SECRETS_FILE is missing.
@@ -109,23 +114,44 @@ class AuthenticatedQueries(object):
 
         self.channel_id = self.channels_list_response["items"][0]["id"]
 
-    def run_analytics_report(self):
+    def run_analytics_report(self, params):
         '''
         Call the Analytics API to retrieve a report. For a list of available reports,
         see: https://developers.google.com/youtube/analytics/v1/channel_reports
-
-        the query parameters should correspond to args in parse_cli_arguments()
         '''
         self.analytics_query_response = self.youtube_analytics.reports().query(
             ids="channel=={}".format(self.channel_id),
-            metrics=self.args.metrics,
-            start_date=self.args.start_date,
-            end_date=self.args.end_date,
-            alt=self.args.alt,
-            sort=self.args.sort
+            metrics=params,
+            start_date=self.alltime,
+            end_date=self.one_day_ago,
+            alt="json",
+            sort="-views"
         ).execute()
 
         return self.analytics_query_response
+
+    def run_top_10_report(self):
+        '''
+        Call the Analytics API to retrieve the top 10 videos by views
+        '''
+        self.top_10_query_response = self.youtube_analytics.reports().query(
+            ids="channel==%s" % self.channel_id,
+            metrics="views,comments,likes,dislikes,shares",
+            dimensions="video",
+            start_date=self.alltime,
+            end_date=self.one_day_ago,
+            max_results=10,
+            sort="-views"
+        ).execute()
+
+        top_10_list = [[row[0], int(row[1])] for row in self.top_10_query_response.get("rows")]
+        top_10_joined = ','.join(item[0] for item in top_10_list)
+        videos_list_response = self.youtube.videos().list(id=top_10_joined, part='snippet').execute()
+
+        for i in range(len(top_10_list)):
+            top_10_list[i].insert(0, videos_list_response['items'][i]['snippet']['title'])
+
+        self.top_10 = top_10_list
 
     def print_report(self, country):
         '''
@@ -141,6 +167,12 @@ class AuthenticatedQueries(object):
         for row in self.analytics_query_response.get("rows", []):
             for value in row:
                 print("{:<20.0f}".format(value), end='')
+        print("\n")
+
+    def print_top_10(self):
+        print("TOP 10 VIDEOS")
+        for item in self.top_10:
+            print('{}: {:,}'.format(item[0], item[2]))
         print("\n")
 
 
@@ -333,14 +365,14 @@ class Plotter(object):
 if __name__ == "__main__":
 
     authenticated_queries = AuthenticatedQueries()
-    authenticated_queries.parse_cli_arguments()
 
-    # create a list of the metric names in the report from command line arguments passed to --metrics
-    # the order of these doesn't matter because the metric names are keys in the metrics dict
-    columnHeaders = authenticated_queries.args.metrics.split(',')
+    # create a list of the metric names for the analytics report
+    # the order of these in column_headers doesn't matter because the metric names are keys in the metrics dict
+    metrics_query = "views,comments,likes,dislikes,shares,subscribersGained,subscribersLost"
+    column_headers = metrics_query.split(',')
 
     analytics = Analytics()
-    analytics.metrics = {column: {} for column in columnHeaders}
+    analytics.metrics = {column: {} for column in column_headers}
 
     for country in countries:
 
@@ -348,12 +380,15 @@ if __name__ == "__main__":
 
         try:
             authenticated_queries.get_channel_id()
-            report = authenticated_queries.run_analytics_report()
+            report = authenticated_queries.run_analytics_report(metrics_query)
             authenticated_queries.print_report(country)
 
+            authenticated_queries.run_top_10_report()
+            authenticated_queries.print_top_10()
+
             # update dicts in metrics with country specific values
-            for i in range(len(columnHeaders)):
-                analytics.metrics[columnHeaders[i]][country] = int(report['rows'][0][i])
+            for i in range(len(column_headers)):
+                analytics.metrics[column_headers[i]][country] = int(report['rows'][0][i])
 
         except HttpError as e:
             print("An HTTP error {} occurred:".format(e.resp.status))
