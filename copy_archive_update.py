@@ -218,6 +218,8 @@ class Copier(object):
                     elif os.path.isfile(still_dst):
                         print('{} already exists'.format(thing.name))
 
+        print('\n')
+
     def copy(self, vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path):
 
         # TODO: if same video is copied for multiple countries, do not archive video each time, wait until after last country is copied
@@ -229,7 +231,7 @@ class Copier(object):
             if os.path.exists(archive_path):
                 print("removing old {} from local archive...".format(file_name))
                 os.remove(archive_path)
-            print("copying {} to local archive...\n".format(file_name))
+            print("copying {} to local archive...".format(file_name))
             shutil.copy2(src_file, archive_path)
 
             if os.path.exists(country_path):
