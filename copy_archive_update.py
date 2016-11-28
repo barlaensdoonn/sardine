@@ -77,12 +77,15 @@ class Copier(object):
         self.src_dir = '/Users/baleson/Desktop/python_squeeze_me/exportsForLocalization'
         self.export_path = 'Exports/localizedVP9'
         self.stills_path = 'Stills'
-        self.recipe_images_250 = '/Volumes/public/International/Editorial/Video/Recipe Images/250x250'
-        self.recipe_images_HD = '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720'
-        self.recipe_images_RAW = '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images'
         self.no_copy_dir = '/Users/baleson/Desktop/python_squeeze_me/no_copy'
         self.copied_dir = '/Users/baleson/Desktop/python_squeeze_me/copied'
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
+
+        self.stills_paths = {
+            '250': '/Volumes/public/International/Editorial/Video/Recipe Images/250x250',
+            'hd': '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720',
+            'raw': '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images',
+        }
 
         self.archive_paths = {
             "video_raid": '/Volumes/Video HD Raid 5/Allrecipes International Video Projects/editingLocalizing',
@@ -195,14 +198,34 @@ class Copier(object):
 
             return dst_file
 
-    def copy_stills(self, vid_name):
-        pass
+    def copy_stills(self, vid_name, archive_path):
+        '''
+        stills_base_path is the source path, i.e.:
+        /Volumes/Video HD Raid 5/Allrecipes International Video Projects/editingLocalizing/Perfect_gluten_free_sponge_cake/Stills
+        '''
+        print('checking for stills on P Drive...')
+        stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
+
+        for thing in os.scandir(stills_base_path):
+            for key in self.stills_paths.keys():
+                if os.path.splitext(thing.name)[0].lower().endswith(key):
+                    still_dst = os.path.join(copier.stills_paths[key], thing.name)
+
+                    if not os.path.isfile(still_dst):
+                        print('copying {}'.format(thing.name))
+                        shutil.copy2(thing.path, still_dst)
+
+                    elif os.path.isfile(still_dst):
+                        print('{} already exists'.format(thing.name))
 
     def copy(self, vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path):
 
         # TODO: if same video is copied for multiple countries, do not archive video each time, wait until after last country is copied
 
         if flag[0:4] == 'copy':
+            if country == 'UK':
+                self.copy_stills(vid_name, archive_path)
+
             if os.path.exists(archive_path):
                 print("removing old {} from local archive...".format(file_name))
                 os.remove(archive_path)
@@ -217,7 +240,7 @@ class Copier(object):
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
         else:
-            print("moving {} to no_copy folder\n".format(file_name, "/".join(archive_path.split("/")[2:])))
+            print("moving {} to no_copy folder\n".format(file_name))
             shutil.move(src_file, archive_path)
 
         if backup_src:
