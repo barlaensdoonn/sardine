@@ -197,9 +197,9 @@ class Copier(object):
 
         if flag[0:4] == 'copy':
             if os.path.exists(archive_path):
-                print("removing old {} from archive...".format(file_name))
+                print("removing old {} from local archive...".format(file_name))
                 os.remove(archive_path)
-            print("copying {} to archive...\n".format(file_name))
+            print("copying {} to local archive...\n".format(file_name))
             shutil.copy2(src_file, archive_path)
 
             if os.path.exists(country_path):
@@ -210,7 +210,7 @@ class Copier(object):
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
         else:
-            print("moving {} no_copy folder\n".format(file_name, "/".join(archive_path.split("/")[2:])))
+            print("moving {} to no_copy folder\n".format(file_name, "/".join(archive_path.split("/")[2:])))
             shutil.move(src_file, archive_path)
 
         if backup_src:
@@ -220,7 +220,7 @@ class Copier(object):
             if os.path.isfile(backup_dst_zip):
                 print('{} already exists, removing...'.format(backup_dst_zip))
                 os.remove(backup_dst_zip)
-            print('archiving {}\n'.format(backup_dst))
+            print('archiving {} to DropBox\n'.format(backup_dst))
             shutil.make_archive(backup_dst, 'zip', backup_src)
 
         self.stats[flag].append(file_name)
