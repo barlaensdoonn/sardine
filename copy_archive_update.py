@@ -197,20 +197,20 @@ class Copier(object):
 
         if flag[0:4] == 'copy':
             if os.path.exists(archive_path):
-                print("{} already exists, removing from {}".format(file_name, "/".join(archive_path.split("/")[2:])))
+                print("removing old {} from archive...".format(file_name))
                 os.remove(archive_path)
-            print("copying {} to {}\n".format(file_name, "/".join(archive_path.split("/")[2:])))
+            print("copying {} to archive...\n".format(file_name))
             shutil.copy2(src_file, archive_path)
 
             if os.path.exists(country_path):
-                print("{} already exists, removing from {}".format(file_name, "/".join(country_path.split("/")[2:])))
+                print("removing old {} from country folder...".format(file_name))
                 os.remove(country_path)
-            print("copying {} to {}\n".format(file_name, "/".join(country_path.split("/")[2:])))
+            print("copying {} to country folder...\n".format(file_name))
             shutil.copy2(src_file, country_path)
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
         else:
-            print("moving {} to {}\n".format(file_name, "/".join(archive_path.split("/")[2:])))
+            print("moving {} no_copy folder\n".format(file_name, "/".join(archive_path.split("/")[2:])))
             shutil.move(src_file, archive_path)
 
         if backup_src:
@@ -241,7 +241,6 @@ class Copier(object):
 
 
 if __name__ == '__main__':
-    # TODO: raise exception if not connected to P Drive
 
     sheets = Spreadsheet()
     copier = Copier()
