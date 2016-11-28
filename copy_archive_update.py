@@ -75,7 +75,11 @@ class Copier(object):
 
     def __init__(self):
         self.src_dir = '/Users/baleson/Desktop/python_squeeze_me/exportsForLocalization'
-        self.extra_path = 'Exports/localizedVP9'
+        self.export_path = 'Exports/localizedVP9'
+        self.stills_path = 'Stills'
+        self.recipe_images_250 = '/Volumes/public/International/Editorial/Video/Recipe Images/250x250'
+        self.recipe_images_HD = '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720'
+        self.recipe_images_RAW = '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images'
         self.no_copy_dir = '/Users/baleson/Desktop/python_squeeze_me/no_copy'
         self.copied_dir = '/Users/baleson/Desktop/python_squeeze_me/copied'
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
@@ -156,10 +160,10 @@ class Copier(object):
         for key in self.archive_paths:
             for dir in os.scandir(self.archive_paths[key]):
                 if dir.name == vid_name:
-                    if not os.path.exists(os.path.join(dir.path, self.extra_path)):
-                        print("{} improperly set up for {}".format(self.extra_path, vid_name))
-                        print("creating {} directory".format(os.path.join(vid_name, self.extra_path)))
-                        os.mkdir(os.path.join(dir.path, self.extra_path))
+                    if not os.path.exists(os.path.join(dir.path, self.export_path)):
+                        print("{} improperly set up for {}".format(self.export_path, vid_name))
+                        print("creating {} directory".format(os.path.join(vid_name, self.export_path)))
+                        os.mkdir(os.path.join(dir.path, self.export_path))
 
                     if key == 'video_localized':
                         flag = "copy_zip"
@@ -173,7 +177,7 @@ class Copier(object):
                         flag = "copy"
                         backup_src = None
 
-                    dst_file = os.path.join(dir.path, self.extra_path, file_name)
+                    dst_file = os.path.join(dir.path, self.export_path, file_name)
 
                     return dst_file, backup_src, flag
 
@@ -191,7 +195,10 @@ class Copier(object):
 
             return dst_file
 
-    def copy(self, file_name, src_file, archive_path, backup_src, flag, country_path):
+    def copy_stills(self, vid_name):
+        pass
+
+    def copy(self, vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path):
 
         # TODO: if same video is copied for multiple countries, do not archive video each time, wait until after last country is copied
 
@@ -218,9 +225,9 @@ class Copier(object):
             backup_dst_zip = backup_dst + '.zip'
 
             if os.path.isfile(backup_dst_zip):
-                print('{} already exists, removing...'.format(backup_dst_zip))
+                print('{}.zip already exists in DropBox, removing...'.format(vid_name))
                 os.remove(backup_dst_zip)
-            print('archiving {} to DropBox\n'.format(backup_dst))
+            print('archiving {} to DropBox\n'.format(vid_name))
             shutil.make_archive(backup_dst, 'zip', backup_src)
 
         self.stats[flag].append(file_name)
@@ -262,7 +269,7 @@ if __name__ == '__main__':
         src_file = copier.vid_dict[key][2]
         archive_path, backup_src, flag = copier.find_archive_path(vid_name, file_name)
         country_path = copier.find_country_path(country, file_name)
-        copier.copy(file_name, src_file, archive_path, backup_src, flag, country_path)
+        copier.copy(vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path)
 
         if flag != 'not_found':
             sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
