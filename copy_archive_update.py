@@ -80,6 +80,7 @@ class Copier(object):
         self.no_copy_dir = '/Users/baleson/Desktop/python_squeeze_me/no_copy'
         self.copied_dir = '/Users/baleson/Desktop/python_squeeze_me/copied'
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
+        self.stats = {flags[i]: [] for i in range(len(flags))}
 
         self.stills_paths = {
             '250': '/Volumes/public/International/Editorial/Video/Recipe Images/250x250',
@@ -113,8 +114,6 @@ class Copier(object):
             "RU": "/Volumes/public/International/Editorial/Video/Videos by country/RU/_New videos",
             "UK": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/UK",
         }
-
-        self.stats = {flags[i]: [] for i in range(len(flags))}
 
     def clean_up(self):
         '''
@@ -200,7 +199,7 @@ class Copier(object):
 
     def copy_stills(self, vid_name, archive_path):
         '''
-        stills_base_path is the source path, i.e.:
+        stills_base_path is the video's Stills path, i.e.:
         /Volumes/Video HD Raid 5/Allrecipes International Video Projects/editingLocalizing/Perfect_gluten_free_sponge_cake/Stills
         '''
         print('checking for stills on P Drive...')
@@ -231,13 +230,13 @@ class Copier(object):
             if os.path.exists(archive_path):
                 print("removing old {} from local archive...".format(file_name))
                 os.remove(archive_path)
-            print("copying {} to local archive...".format(file_name))
+            print("copying new {} to local archive...".format(file_name))
             shutil.copy2(src_file, archive_path)
 
             if os.path.exists(country_path):
                 print("removing old {} from country folder...".format(file_name))
                 os.remove(country_path)
-            print("copying {} to country folder...\n".format(file_name))
+            print("copying new {} to country folder...\n".format(file_name))
             shutil.copy2(src_file, country_path)
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
@@ -279,6 +278,10 @@ if __name__ == '__main__':
 
     if not os.path.isdir(copier.country_paths['AR']):
         raise Exception("not connected to P Drive")
+    if not os.path.isdir(copier.country_paths['FR']):
+        raise Exception("not connected to Google Drive")
+    if not os.path.isdir(copier.country_paths['PL']):
+        raise Exception("DropBox directory not configured")
 
     sheets.authenticate()
     sheets.make_sheet_names_dict()
