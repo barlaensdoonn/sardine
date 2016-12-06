@@ -7,6 +7,7 @@ import os
 import shutil
 import traceback
 from oauth2client.service_account import ServiceAccountCredentials
+import windy_paths
 
 
 flags = ['copy', 'copy_zip', 'copy_zip_US', 'not_found']
@@ -27,7 +28,7 @@ class Spreadsheet(object):
         print('authenticating to Google Sheets...\n')
 
         scope = ['https://spreadsheets.google.com/feeds']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/baleson/Documents/credentials/googleAuth/spreadsheet-access-5092af4cc743.json', scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(windy_paths.spread_cred, scope)
 
         gc = gspread.authorize(credentials)
 
@@ -75,11 +76,11 @@ class Spreadsheet(object):
 class Copier(object):
 
     def __init__(self):
-        self.src_dir = '/Users/baleson/Desktop/python_squeeze_me/exportsForLocalization'
+        self.src_dir = windy_paths.copier_src_dir
         self.export_path = 'Exports/localizedVP9'
         self.stills_path = 'Stills'
-        self.no_copy_dir = '/Users/baleson/Desktop/python_squeeze_me/no_copy'
-        self.copied_dir = '/Users/baleson/Desktop/python_squeeze_me/copied'
+        self.no_copy_dir = windy_paths.no_copy_dir
+        self.copied_dir = windy_paths.copied_dir
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
         self.stats = {flags[i]: [] for i in range(len(flags))}
 
