@@ -6,6 +6,7 @@ import gspread
 import os
 import shutil
 from oauth2client.service_account import ServiceAccountCredentials
+from windy_paths import spread_cred
 
 localized = {'X'}
 localized_NA = {'X', 'N/A'}
@@ -30,7 +31,7 @@ def authenticate():
     returns a tuple of the Pending tab and the archived by robot spreadsheet from the Master List
     '''
     scope = ['https://spreadsheets.google.com/feeds']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('/Users/baleson/Documents/credentials/googleAuth/spreadsheet-access-5092af4cc743.json', scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(spread_cred, scope)
 
     gc = gspread.authorize(credentials)
 
