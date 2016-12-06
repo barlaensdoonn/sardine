@@ -81,6 +81,7 @@ class Copier(object):
         self.stills_path = 'Stills'
         self.no_copy_dir = windy_paths.no_copy_dir
         self.copied_dir = windy_paths.copied_dir
+        self.duplicates = {}
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
         self.stats = {flags[i]: [] for i in range(len(flags))}
 
@@ -145,10 +146,17 @@ class Copier(object):
         vid name is name of the video (which should be its directory too), such as 'Hot_cross_buns'
         COUNTRY is 2 letter country for that file, such as 'UK'
         src_file is full path to source file to use for copying
+
+        if more than one video from same directory in filenames, add the number
+        of duplicates to self.duplicates dict as {'vid_name': # of times duplicated}
         '''
         vid_names = [file[:(len(file) - 8)] for file in self.filenames]
         vid_countries = [file[(len(file) - 7):(len(file) - 5)] for file in self.filenames]
         vid_split = list(zip(vid_names, vid_countries, self.src_files))
+
+        for vid in vid_names:
+            if vid_names.count(vid) > 1 and vid not in self.duplicates:
+                self.duplicates[vid] = vid_names.count(vid) - 1
 
         self.vid_dict = {file: splits for (file, splits) in zip(self.filenames, vid_split)}
 
@@ -299,6 +307,14 @@ if __name__ == '__main__':
         src_file = copier.vid_dict[key][2]
         archive_path, backup_src, flag = copier.find_archive_path(vid_name, file_name)
         country_path = copier.find_country_path(country, file_name)
+
+        # if two videos from same directory are being copied and video is in archive
+        # don't create archive until last video has been copied
+        if vid_name in copier.duplicates and backup_src:
+            if copier.duplicates[vid_name]:
+                backup_src = None
+                copier.duplicates[vid_name] -= 1
+
         copier.copy(vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path)
 
         if flag != 'not_found':
