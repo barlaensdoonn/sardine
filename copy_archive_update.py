@@ -5,6 +5,7 @@
 import gspread
 import os
 import shutil
+import traceback
 from oauth2client.service_account import ServiceAccountCredentials
 
 
@@ -300,6 +301,10 @@ if __name__ == '__main__':
         copier.copy(vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path)
 
         if flag != 'not_found':
-            sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
+            try:
+                sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
+            except Exception as e:
+                print('could not update spreadsheet for {}:'.format(vid_name))
+                traceback.print_exc()
 
     copier.print_report()
