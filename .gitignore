@@ -2,3 +2,4 @@
 copy_archive_update_old.py
 notepad.py
 windy_paths.py
+/__pycache__
