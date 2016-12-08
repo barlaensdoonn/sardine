@@ -10,7 +10,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import windy_paths
 
 
-flags = ['copy', 'copy_zip', 'copy_zip_US', 'not_found']
+# do not change order of flags without updating make_sheets methods in spreadsheet class
+flags = ['copy', 'copy_zip', 'copy_zip_US', 'not_found', 'stills']
 
 
 class Spreadsheet(object):
@@ -126,17 +127,18 @@ class Copier(object):
         print('checking for stills on P Drive...')
         stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
 
-        for thing in os.scandir(stills_base_path):
+        for pic in os.scandir(stills_base_path):
             for key in self.stills_paths.keys():
-                if os.path.splitext(thing.name)[0].lower().endswith(key):
-                    still_dst = os.path.join(copier.stills_paths[key], thing.name)
+                if os.path.splitext(pic.name)[0].lower().endswith(key):
+                    still_dst = os.path.join(copier.stills_paths[key], pic.name)
 
                     if not os.path.isfile(still_dst):
-                        print('copying {}'.format(thing.name))
-                        shutil.copy2(thing.path, still_dst)
+                        print('copying {}'.format(pic.name))
+                        shutil.copy2(pic.path, still_dst)
+                        self.stats['stills'].append(pic.name)
 
                     elif os.path.isfile(still_dst):
-                        print('{} already exists'.format(thing.name))
+                        print('{} already exists'.format(pic.name))
 
         print('\n')
 
