@@ -20,6 +20,29 @@ class Spreadsheet(object):
             "AR": 5, "AU": 6, "BR": 7, "DE": 8, "FR": 9, "IT": 10, "MX": 11, "NL": 12, "PL": 13, "QC": 14, "RU": 15, "UK": 4
         }
 
+    def _replace_chars(self, string):
+        name = string
+
+        for x in [',', ':']:
+            name = name.replace(x, '')
+
+        for y in ['-', ' ']:
+            name = name.replace(y, '_')
+
+        return name
+
+    def _get_sheet_names(self, spreadsheet):
+        sheet_names = {}
+        video_names = spreadsheet.col_values(1)
+
+        for item in video_names:
+            if item != '':
+                if not item.isupper():
+                    name = self._replace_chars(item).lower()
+                    sheet_names[name] = item
+
+        return sheet_names
+
     def authenticate(self):
         '''
         authenticates account with Google drive
@@ -39,31 +62,8 @@ class Spreadsheet(object):
 
         self.spreadsheets = (master_list_pending, master_list_completed, master_list_completed_US)
 
-    def replace_chars(self, string):
-        name = string
-
-        for x in [',', ':']:
-            name = name.replace(x, '')
-
-        for y in ['-', ' ']:
-            name = name.replace(y, '_')
-
-        return name
-
-    def get_sheet_names(self, spreadsheet):
-        sheet_names = {}
-        video_names = spreadsheet.col_values(1)
-
-        for item in video_names:
-            if item != '':
-                if not item.isupper():
-                    name = self.replace_chars(item).lower()
-                    sheet_names[name] = item
-
-        return sheet_names
-
     def make_sheet_names_dict(self):
-        self.sheet_names_dict = {flags[i]: self.get_sheet_names(self.spreadsheets[i]) for i in range(len(self.spreadsheets))}
+        self.sheet_names_dict = {flags[i]: self._get_sheet_names(self.spreadsheets[i]) for i in range(len(self.spreadsheets))}
 
     def make_sheets_dict(self):
         self.sheets_dict = {flags[i]: self.spreadsheets[i] for i in range(len(self.spreadsheets))}
@@ -117,6 +117,28 @@ class Copier(object):
             "RU": "/Volumes/public/International/Editorial/Video/Videos by country/RU/_New videos",
             "UK": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/UK",
         }
+
+    def _copy_stills(self, vid_name, archive_path):
+        '''
+        stills_base_path is the video's Stills path, i.e.:
+        /Volumes/Video HD Raid 5/Allrecipes International Video Projects/editingLocalizing/Perfect_gluten_free_sponge_cake/Stills
+        '''
+        print('checking for stills on P Drive...')
+        stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
+
+        for thing in os.scandir(stills_base_path):
+            for key in self.stills_paths.keys():
+                if os.path.splitext(thing.name)[0].lower().endswith(key):
+                    still_dst = os.path.join(copier.stills_paths[key], thing.name)
+
+                    if not os.path.isfile(still_dst):
+                        print('copying {}'.format(thing.name))
+                        shutil.copy2(thing.path, still_dst)
+
+                    elif os.path.isfile(still_dst):
+                        print('{} already exists'.format(thing.name))
+
+        print('\n')
 
     def clean_up(self):
         '''
@@ -207,35 +229,11 @@ class Copier(object):
 
             return dst_file
 
-    def copy_stills(self, vid_name, archive_path):
-        '''
-        stills_base_path is the video's Stills path, i.e.:
-        /Volumes/Video HD Raid 5/Allrecipes International Video Projects/editingLocalizing/Perfect_gluten_free_sponge_cake/Stills
-        '''
-        print('checking for stills on P Drive...')
-        stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
-
-        for thing in os.scandir(stills_base_path):
-            for key in self.stills_paths.keys():
-                if os.path.splitext(thing.name)[0].lower().endswith(key):
-                    still_dst = os.path.join(copier.stills_paths[key], thing.name)
-
-                    if not os.path.isfile(still_dst):
-                        print('copying {}'.format(thing.name))
-                        shutil.copy2(thing.path, still_dst)
-
-                    elif os.path.isfile(still_dst):
-                        print('{} already exists'.format(thing.name))
-
-        print('\n')
-
     def copy(self, vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path):
-
-        # TODO: if same video is copied for multiple countries, do not archive video each time, wait until after last country is copied
 
         if flag[0:4] == 'copy':
             if country == 'UK':
-                self.copy_stills(vid_name, archive_path)
+                self._copy_stills(vid_name, archive_path)
 
             if os.path.exists(archive_path):
                 print("removing old {} from local archive...".format(file_name))
@@ -261,7 +259,7 @@ class Copier(object):
             if os.path.isfile(backup_dst_zip):
                 print('{}.zip already exists in DropBox, removing...'.format(vid_name))
                 os.remove(backup_dst_zip)
-            print('archiving {} to DropBox\n'.format(vid_name))
+            print('archiving {} to DropBox...\n'.format(vid_name))
             shutil.make_archive(backup_dst, 'zip', backup_src)
 
         self.stats[flag].append(file_name)
@@ -309,7 +307,7 @@ if __name__ == '__main__':
         country_path = copier.find_country_path(country, file_name)
 
         # if two videos from same directory are being copied and video is in archive
-        # don't create archive until last video has been copied
+        # don't create archive until last video has been copied (set backup_src to None)
         if vid_name in copier.duplicates and backup_src:
             if copier.duplicates[vid_name]:
                 backup_src = None
