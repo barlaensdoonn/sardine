@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # gspread archiver
 # 5/19/16
+# updated 12/18/16
 
 import gspread
 import os
@@ -30,6 +31,8 @@ def authenticate():
     authenticates account with Google drive
     returns a tuple of the Pending tab and the archived by robot spreadsheet from the Master List
     '''
+    print('authenticating to Google Sheets...\n')
+
     scope = ['https://spreadsheets.google.com/feeds']
     credentials = ServiceAccountCredentials.from_json_keyfile_name(spread_cred, scope)
 
