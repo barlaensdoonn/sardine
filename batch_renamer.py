@@ -4,13 +4,14 @@
 # TODO: if file already exists, add to another list and don't do anything
 # TODO: sort files into folders by codec
 # TODO: same renaming for premiere pro projects
+# NOTE: How_to_decorate_Easter_cupcakes needs to be done manually (just the Localized_H264/singles/ dir)
 
 import os
 import csv
 from windy_paths import filename_map_path, modified_dirs_path
 
 search_path = "/Volumes/Video_Localized"
-countries = ('ar', 'au', 'br', 'de', 'fr', 'it', 'mx', 'nl', 'pl', 'qc', 'ru', 'uk', 'blank', 'social')
+countries = ('ar', 'au', 'br', 'de', 'fr', 'it', 'mx', 'nl', 'pl', 'qc', 'ru', 'uk')
 extensions = ('.webm', '.mov', '.mp4', '.m4v')
 filename_map = []
 dir_list = []
