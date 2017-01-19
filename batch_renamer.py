@@ -10,7 +10,7 @@ import csv
 from windy_paths import filename_map_path, modified_dirs_path
 
 search_path = "/Volumes/Video_Localized"
-countries = ['ar', 'au', 'br', 'de', 'fr', 'it', 'mx', 'nl', 'pl', 'qc', 'ru', 'uk', 'blank', 'social']
+countries = ('ar', 'au', 'br', 'de', 'fr', 'it', 'mx', 'nl', 'pl', 'qc', 'ru', 'uk', 'blank', 'social')
 extensions = ('.webm', '.mov', '.mp4', '.m4v')
 filename_map = []
 dir_list = []
