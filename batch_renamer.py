@@ -52,12 +52,14 @@ class Renamer(object):
     def rename_file(self, old_file, path):
         old_file_path = os.path.join(path, old_file)
         self.new_file_path = os.path.join(path, self.new_file)
+        print('renaming {} to {}'.format(old_file, self.new_file))
         os.rename(old_file_path, self.new_file_path)
         logging.info('renamed {} to {}'.format(old_file_path, self.new_file_path))
         self.rename_count += 1
 
     def country_copy(self, country, dirpath):
         country_file = os.path.join(self.country_paths[country], self.new_file)
+        print('copying {} to {} folder'.format(self.new_file, country.upper()))
         shutil.copy2(self.new_file_path, country_file)
         logging.info('copied {} to {}'.format(self.new_file_path, country_file))
         self.copy_count += 1
