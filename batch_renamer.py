@@ -7,6 +7,7 @@
 import os
 import shutil
 import csv
+import logging
 import traceback
 from windy_paths import filename_map_path, modified_dirs_path
 
@@ -45,10 +46,12 @@ class Renamer(object):
         old_file_path = os.path.join(path, old_file)
         self.new_file_path = os.path.join(path, renamer.new_file)
         os.rename(old_file_path, self.new_file_path)
+        logging.info('renamed {} to {}'.format(old_file_path, self.new_file_path))
 
     def country_copy(self, country, dirpath):
         country_file = os.path.join(self.country_paths[country], self.new_file)
         shutil.copy2(self.new_file_path, country_file)
+        logging.info('copied {} to {}'.format(self.new_file_path, country_file))
 
     def print_records_to_file(self):
         with open(filename_map_path, 'w') as out:
@@ -64,17 +67,25 @@ class Renamer(object):
                 csv_out.writerow(row)
 
     def print_counts(self):
-        print('total file size (GB): {:,}'.format(self.file_size_counter / 1000000000))
-        print('total file size (GB [1024]): {:,}'.format(self.file_size_counter / 1048576000))
+        total_file_size = self.file_size_counter / 1000000000
+        total_file_size_1024 = self.file_size_counter / 1048576000
+        print('total file size (GB): {:,}'.format(total_file_size))
+        print('total file size (GB [1024]): {:,}'.format(total_file_size_1024))
         print('total # of files: {:,}\n'.format(self.count))
+        logging.info('total file size (GB): {:,}'.format(total_file_size))
+        logging.info('total file size (GB [1024]): {:,}'.format(total_file_size_1024))
+        logging.info('total # of files: {:,}\n'.format(self.count))
 
         print('------ total files by country ------')
+        logging.info('------ total files by country ------')
         for key in sorted(self.country_count.keys()):
             print('{}: {}'.format(key.upper(), self.country_count[key]))
+            logging.info('{}: {}'.format(key.upper(), self.country_count[key]))
         print("\n")
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='/Volumes/Video_Localized/rename_log.log', format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %H:%M:%S', level=logging.INFO)
     renamer = Renamer()
 
     try:
@@ -90,14 +101,17 @@ if __name__ == '__main__':
                             if renamer.split[0].lower().endswith(country):
                                 package = (country, dirpath, file)
 
+                                # add video to global count regardless of rename
                                 renamer.add_to_count(*package)
                                 renamer.new_file = renamer.get_new_file_name(*package[0:2])
 
+                                # rename file if not formatted properly
                                 if renamer.new_file != file:
                                     holder = (file, renamer.new_file, dirpath)
                                     renamer.append_to_record(holder)
                                     renamer.rename_file(file, dirpath)
 
+                                # after rename, copy to country specific folder
                                 renamer.country_copy(country, dirpath)
 
         renamer.print_records_to_file()
@@ -108,4 +122,6 @@ if __name__ == '__main__':
         renamer.print_records_to_file()
         print("counts up to the point of the error:")
         renamer.print_counts()
+
         print(traceback.format_exc())
+        logging.error(traceback.format_exc())
