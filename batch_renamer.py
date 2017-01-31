@@ -40,10 +40,10 @@ class Renamer(object):
         if (self.vid_name,) not in self.dir_list:
             self.dir_list.append((self.vid_name,))
 
-    def rename_file(self, file, new_filename, path):
-        old_file = os.path.join(dirpath, file)
-        new_file = os.path.join(dirpath, new_filename)
-        os.rename(old_file, new_file)
+    def rename_file(self, old_file, path):
+        old_file_path = os.path.join(path, old_file)
+        new_file_path = os.path.join(path, renamer.new_file)
+        os.rename(old_file_path, new_file_path)
 
     def print_records_to_file(self):
         with open(filename_map_path, 'w') as out:
@@ -91,7 +91,8 @@ if __name__ == '__main__':
                                 if renamer.new_file != file:
                                     holder = (file, renamer.new_file, dirpath)
                                     renamer.append_to_record(holder)
-                                    renamer.rename_file(*holder)
+
+                                    renamer.rename_file(file, dirpath)
 
         renamer.print_records_to_file()
         renamer.print_counts()
