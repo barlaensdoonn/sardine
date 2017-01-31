@@ -51,7 +51,7 @@ class Renamer(object):
 
     def rename_file(self, old_file, path):
         old_file_path = os.path.join(path, old_file)
-        self.new_file_path = os.path.join(path, renamer.new_file)
+        self.new_file_path = os.path.join(path, self.new_file)
         os.rename(old_file_path, self.new_file_path)
         logging.info('renamed {} to {}'.format(old_file_path, self.new_file_path))
         self.rename_count += 1
