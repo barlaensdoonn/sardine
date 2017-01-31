@@ -1,7 +1,5 @@
 #!/usr/local/bin/python3
-# archive video into DropBox country folder
-
-# TODO: sort files into folders by codec
+# 1/30/17
 
 
 import os
@@ -13,6 +11,13 @@ from windy_paths import filename_map_path, modified_dirs_path
 
 
 class Renamer(object):
+    '''
+    if leading part of filename does not match the master video path,
+    rename the file while preserving its country extension.
+    copy to directory by country regardless of rename
+
+    TODO: sort files into folders by codec
+    '''
 
     def __init__(self):
         self.search_path = "/Volumes/Video_Localized"
