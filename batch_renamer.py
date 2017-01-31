@@ -15,6 +15,7 @@ class Renamer(object):
     def __init__(self):
         self.search_path = "/Volumes/Video_Localized"
         self.countries = ('ar', 'au', 'br', 'de', 'fr', 'it', 'mx', 'nl', 'pl', 'qc', 'ru', 'uk')
+        self.country_paths = {country: os.path.join('/Volumes/Video_Localized/by_country', country.upper()) for country in self.countries}
         self.country_count = {self.countries[i]: 0 for i in range(len(self.countries))}
         self.extensions = ('.webm', '.mov', '.mp4', '.m4v')
         self.filename_map = []
@@ -38,6 +39,11 @@ class Renamer(object):
         self.filename_map.append(holder)
         if (self.vid_name,) not in self.dir_list:
             self.dir_list.append((self.vid_name,))
+
+    def rename_file(self, file, new_filename, path):
+        old_file = os.path.join(dirpath, file)
+        new_file = os.path.join(dirpath, new_filename)
+        os.rename(old_file, new_file)
 
     def print_records_to_file(self):
         with open(filename_map_path, 'w') as out:
@@ -85,6 +91,7 @@ if __name__ == '__main__':
                                 if renamer.new_file != file:
                                     holder = (file, renamer.new_file, dirpath)
                                     renamer.append_to_record(holder)
+                                    renamer.rename_file(*holder)
 
         renamer.print_records_to_file()
         renamer.print_counts()
