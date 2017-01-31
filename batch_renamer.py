@@ -24,6 +24,8 @@ class Renamer(object):
         self.dir_list = []
         self.count = 0
         self.file_size_counter = 0
+        self.rename_count = 0
+        self.copy_count = 0
 
     def split_path(self, path):
         return [item.lower().strip() for item in path.split('/')]
@@ -47,11 +49,13 @@ class Renamer(object):
         self.new_file_path = os.path.join(path, renamer.new_file)
         os.rename(old_file_path, self.new_file_path)
         logging.info('renamed {} to {}'.format(old_file_path, self.new_file_path))
+        self.rename_count += 1
 
     def country_copy(self, country, dirpath):
         country_file = os.path.join(self.country_paths[country], self.new_file)
         shutil.copy2(self.new_file_path, country_file)
         logging.info('copied {} to {}'.format(self.new_file_path, country_file))
+        self.copy_count += 1
 
     def print_records_to_file(self):
         with open(filename_map_path, 'w') as out:
@@ -72,9 +76,13 @@ class Renamer(object):
         print('total file size (GB): {:,}'.format(total_file_size))
         print('total file size (GB [1024]): {:,}'.format(total_file_size_1024))
         print('total # of files: {:,}\n'.format(self.count))
+        print('total # of files renamed: {}'.format(self.rename_count))
+        print('total # of files copied: {}'.format(self.copy_count))
         logging.info('total file size (GB): {:,}'.format(total_file_size))
         logging.info('total file size (GB [1024]): {:,}'.format(total_file_size_1024))
         logging.info('total # of files: {:,}\n'.format(self.count))
+        logging.info('total # of files renamed: {}'.format(self.rename_count))
+        logging.info('total # of files copied: {}'.format(self.copy_count))
 
         print('------ total files by country ------')
         logging.info('------ total files by country ------')
