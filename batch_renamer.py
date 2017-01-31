@@ -5,6 +5,7 @@
 # TODO: sort files into folders by codec
 # TODO: same renaming for premiere pro projects
 
+
 import os
 import csv
 from windy_paths import filename_map_path, modified_dirs_path
@@ -60,4 +61,4 @@ print('total # of files: {:,}\n'.format(count))
 
 print('------ total files by country ------')
 for key in sorted(country_count.keys()):
-    print('{}: {}'.format(key, country_count[key]))
+    print('{}: {}'.format(key.upper(), country_count[key]))
