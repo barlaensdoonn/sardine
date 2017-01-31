@@ -5,6 +5,7 @@
 
 
 import os
+import shutil
 import csv
 import traceback
 from windy_paths import filename_map_path, modified_dirs_path
@@ -42,8 +43,12 @@ class Renamer(object):
 
     def rename_file(self, old_file, path):
         old_file_path = os.path.join(path, old_file)
-        new_file_path = os.path.join(path, renamer.new_file)
-        os.rename(old_file_path, new_file_path)
+        self.new_file_path = os.path.join(path, renamer.new_file)
+        os.rename(old_file_path, self.new_file_path)
+
+    def country_copy(self, country, dirpath):
+        country_file = os.path.join(self.country_paths[country], self.new_file)
+        shutil.copy2(self.new_file_path, country_file)
 
     def print_records_to_file(self):
         with open(filename_map_path, 'w') as out:
@@ -91,8 +96,9 @@ if __name__ == '__main__':
                                 if renamer.new_file != file:
                                     holder = (file, renamer.new_file, dirpath)
                                     renamer.append_to_record(holder)
-
                                     renamer.rename_file(file, dirpath)
+
+                                renamer.country_copy(country, dirpath)
 
         renamer.print_records_to_file()
         renamer.print_counts()
