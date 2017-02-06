@@ -1,10 +1,6 @@
 .DS_Store
-<<<<<<< HEAD
-/misc
-=======
 copy_archive_update_old.py
 notepad.py
 windy_paths.py
 /misc
 /__pycache__
->>>>>>> 0b9cc63e14a6bbfca534c1eb391f3b7efde42722
