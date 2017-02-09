@@ -140,8 +140,8 @@ class Copier(object):
                     elif os.path.isfile(still_dst):
                         print('{} already exists'.format(pic.name))
 
-            else:
-                print("didn't find any stills to copy")
+        else:
+            print("didn't find any stills to copy")
 
         print('\n')
 
