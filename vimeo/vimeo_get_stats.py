@@ -6,6 +6,7 @@ import csv
 import vimeo
 import vimeo_credents
 
+
 # api request goes here, while loop will step through pages until exhausted
 api_call = '/me/videos?sort=alphabetical'
 
@@ -49,7 +50,7 @@ def write_results(vid_list, plays, likes):
 
 
 if __name__ == '__main__':
-    vimeod = vimeo.VimeoClient(token=vimeo_credents.access_token, key=vimeo_credents.client_identifier, secret=vimeo_credents.client_secrets)
+    vimeod = vimeo.VimeoClient(token=vimeo_credents.stats_access_token, key=vimeo_credents.client_identifier, secret=vimeo_credents.client_secrets)
 
     listed = call_api(vimeod, api_call)
     write_results(*listed)
