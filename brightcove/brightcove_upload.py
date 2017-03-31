@@ -31,7 +31,8 @@ class Video(object):
         self.music_track_url = 'https://www.youtube.com/audiolibrary/music'
         self.published_date = None
         self.youtube_url = None
-        self.brightcove_id = None
+        self.id = None
+        self.brightcove_details = None
 
 
 class Brightcove(object):
@@ -39,7 +40,7 @@ class Brightcove(object):
 
     def __init__(self):
         self.pub_id = bright_brick_road.pub_id
-        self.folders = {}
+        self.folders = self._get_folders()
 
     def _get_authorization_headers(self):
         '''
@@ -59,16 +60,18 @@ class Brightcove(object):
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
     def _get_folders(self):
-        if self.folders:
-            return self.folders
-        else:
-            url = 'https://cms.api.brightcove.com/v1/accounts/{}/folders'.format(self.pub_id)
-            r = requests.get(url, headers=self.get_authorization_headers())
+        '''
+        map country code to Brightcove folder ids
+        '''
+        folders = {}
 
-            for folder in r.json():
-                self.folders[folder['name'].lower()] = folder['id']
+        url = 'https://cms.api.brightcove.com/v1/accounts/{}/folders'.format(self.pub_id)
+        r = requests.get(url, headers=self.get_authorization_headers())
 
-            return self.folders
+        for folder in r.json():
+            folders[folder['name'].lower()] = folder['id']
+
+        return folders
 
     def search_for_video(self, ref_id):
         '''
@@ -111,9 +114,18 @@ class Brightcove(object):
         r = requests.post(url, headers=self._get_authorization_headers(), data=json_data)
 
         vid_deets = r.json()
-        video.brightcove_id = vid_deets['id']
+        video.brightcove_details = vid_deets
+        video.id = vid_deets['id']
 
-        return vid_deets
+    def drop_in_folder(self, video_id):
+        '''
+        CMS API call to put video in corresponding country folder
+        '''
+        folder_id = self.folders[video.country]
+        url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}/folders/{folderid}/videos/{videoid}'.format(pubid=self.pub_id, folderid=folder_id, videoid=video_id)
+        r = requests.put(url, headers=self.get_authorization_headers())
+
+        return r.status_code
 
     def delete_video(self, video_id):
         '''
@@ -166,5 +178,5 @@ if __name__ == '__main__':
     brightcove = Brightcove()
 
     vid = brightcove.create_video(video)
-    upload_response = brightcove.upload(video.brightcove_id, video.path, video.filename)
-    brightcove.di_request(video.brightcove_id, upload_response[0])
+    upload_response = brightcove.upload(video.id, video.path, video.filename)
+    brightcove.di_request(video.id, upload_response[0])
