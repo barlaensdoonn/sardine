@@ -2,6 +2,7 @@
 # brightcove playground
 # 3/30/17
 
+import os
 import json
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -12,7 +13,25 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 pub_id = bright_brick_road.pub_id
 filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/Plank_smoked_salmon_UK.mp4'
-source_filename = 'Plank_smoked_salmon_UK'
+
+
+class Video(object):
+
+    def __init__(self, path):
+        self.path = path
+        self.filename = os.path.split(self.path)[-1]
+        self.name = os.path.splitext(self.filename)[0]
+        self.country = self.name[-2:].lower()
+        self.source_id = '30283-AU'
+        self.reference_id = '42304-UK'
+        self.recipe_url = 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx'
+        self.state = 'INACTIVE'
+        self.music_track = 'Sugar Zone'
+        self.music_track_author = 'Silent Partner'
+        self.music_track_url = 'https://www.youtube.com/audiolibrary/music'
+        self.published_date = None
+        self.youtube_url = None
+        self.brightcove_id = None
 
 
 def get_authorization_headers():
@@ -33,25 +52,58 @@ def get_authorization_headers():
     return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
 
-def create_video():
+def search_for_video(ref_id):
+    '''
+    CMS API call to search for existing video by reference id
+    '''
+    url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/ref:{refid}".format(pubid=pub_id, refid=ref_id)
+    r = requests.get(url, headers=get_authorization_headers())
+
+    if r.status_code == 200:
+        return r.json()
+    else:
+        return None
+
+
+def create_video(video):
     '''
     CMS API call to create a video in the VideoCloud catalog
     '''
     url = ("https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/").format(pubid=pub_id)
-    data = '''{
-        "name": "TEST_VIDEO",
-        "state": "INACTIVE"
-    }'''
-    r = requests.post(url, headers=get_authorization_headers(), data=data)
+    data = {
+        'name': video.name,
+        'state': video.state,
+        'reference_id': video.reference_id,
+        'tags': [video.country],
+        'custom_fields': {
+            'sourceid': video.source_id,
+            'musictrack': video.music_track,
+            'musictrackauthor': video.music_track_author,
+            'musictrackurl': video.music_track_url,
+            'filename': video.filename,
+            # 'publisheddate': videoFromFile.PublishedDate,
+            # 'ytvideoUrl': videoFromFile.YTVideoURL
+        },
+        'link': {
+            'url': video.recipe_url,
+            'text': '',
+        }
+    }
 
-    return r.json()
+    json_data = json.dumps(data)
+    r = requests.post(url, headers=get_authorization_headers(), data=json_data)
+
+    vid_deets = r.json()
+    video.brightcove_id = vid_deets['id']
+
+    return vid_deets
 
 
 def delete_video(video_id):
     '''
     CMS API call to delete a video in the VideoCloud catalog
     '''
-    url = ("https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}").format(pubid=pub_id, videoid=video_id)
+    url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}".format(pubid=pub_id, videoid=video_id)
     r = requests.delete(url, headers=get_authorization_headers())
 
     return r.status_code
@@ -63,7 +115,7 @@ def upload(video_id, filepath, source_filename):
     to securely upload a source file
     '''
     # Perform an authorized request to obtain a file upload location
-    url = ("https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}").format(pubid=pub_id, videoid=video_id, sourcefilename=source_filename)
+    url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}".format(pubid=pub_id, videoid=video_id, sourcefilename=source_filename)
     r = requests.get(url, headers=get_authorization_headers())
     upload_urls_response = r.json()
 
@@ -72,7 +124,7 @@ def upload(video_id, filepath, source_filename):
     with open(filepath, 'rb') as fh:
         s = requests.put(upload_urls_response['signed_url'], data=fh.read())
 
-    return {'upload_urls_response': upload_urls_response, 'upload_request_response': s.status_code}
+    return (upload_urls_response, s.status_code)
 
 
 def di_request(video_id, upload_urls_response):
@@ -80,7 +132,7 @@ def di_request(video_id, upload_urls_response):
     Ingest API call to populate a video with transcoded renditions
     from a remotely accessible source asset
     '''
-    url = ("https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests").format(pubid=pub_id, videoid=video_id)
+    url = "https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests".format(pubid=pub_id, videoid=video_id)
 
     data = {
         "master": {
@@ -96,6 +148,8 @@ def di_request(video_id, upload_urls_response):
 
 
 if __name__ == '__main__':
-    vid = create_video()
-    upload_response = upload(vid['id'], filepath, source_filename)
-    di_request(vid['id'], upload_response['upload_urls_response'])
+    video = Video(filepath)
+
+    vid = create_video(video)
+    upload_response = upload(video.brightcove_id, video.path, video.filename)
+    di_request(video.brightcove_id, upload_response[0])
