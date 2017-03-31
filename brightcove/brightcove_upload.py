@@ -58,6 +58,18 @@ class Brightcove(object):
 
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
+    def _get_folders(self):
+        if self.folders:
+            return self.folders
+        else:
+            url = 'https://cms.api.brightcove.com/v1/accounts/{}/folders'.format(self.pub_id)
+            r = requests.get(url, headers=self.get_authorization_headers())
+
+            for folder in r.json():
+                self.folders[folder['name'].lower()] = folder['id']
+
+            return self.folders
+
     def search_for_video(self, ref_id):
         '''
         CMS API call to search for existing video by reference id
