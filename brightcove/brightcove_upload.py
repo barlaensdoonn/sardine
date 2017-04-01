@@ -288,16 +288,21 @@ if __name__ == '__main__':
     video = Video(filepath)
     brightcove = Brightcove()
 
+    # search for a video on brightcove with same reference id
     search = brightcove.search_for_video(video.reference_id)
 
     if not search:
+        # if no video found, create new video object and move it into the corresponding country folder
         brightcove.create_video(video)
         brightcove.move_to_folder(video)
 
+        # get upload urls for video file (and stills if they exist), then upload
         for key in video.paths.keys():
-            brightcove.get_upload_urls(video, key)
-            brightcove.upload(video, key)
+            if video.paths[key]:
+                brightcove.get_upload_urls(video, key)
+                brightcove.upload(video, key)
 
+        # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
         brightcove.di_request(video)
     else:
         logger.info('{} exists, moving on...'.format(video.filename))
