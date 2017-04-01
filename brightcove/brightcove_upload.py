@@ -17,26 +17,66 @@ filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/loca
 
 
 class Video(object):
-    '''holds video info for Brightcove'''
+    '''holds video info for input into Brightcove class'''
 
     def __init__(self, path):
-        self.path = path
-        self.filename = os.path.split(self.path)[-1]
+        self.paths = {
+            'video': path,
+            'poster': None,
+            'thumbnail': None
+        }
+        self.basepath = '/Volumes/MACKEREL/Oven/Localization'
+        self.filename = os.path.split(self.paths['video'])[-1]
         self.name = os.path.splitext(self.filename)[0]
+        self.vid_name = self.name[0:-3]
         self.country = self.name[-2:].lower()
         self.source_id = '30283-AU'
         self.reference_id = '42304-UK'
-        self.recipe_url = 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx'
         self.state = 'INACTIVE'
         self.music_track = 'Sugar Zone'
         self.music_track_author = 'Silent Partner'
-        self.music_track_url = 'https://www.youtube.com/audiolibrary/music'
-        self.published_date = None
-        self.youtube_url = None
         self.id = None
         self.json = None
-        self.upload_url = None
-        self.ingest_url = None
+        self.urls = {
+            'music_track': 'https://www.youtube.com/audiolibrary/music',
+            'recipe': 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx',
+            'upload': {
+                'video': None,
+                'poster': None,
+                'thumbnail': None
+            },
+            'ingest': {
+                'video': None,
+                'poster': None,
+                'thumbnail': None
+            }
+        }
+
+        self._get_stills_paths()
+
+    def _get_stills_paths(self):
+        '''
+        utility function to find stills to use for DI API poster and thumbnail images
+        '''
+        search_path = os.path.join(self.basepath, self.vid_name, 'Stills')
+
+        if os.path.isdir(search_path):
+            logger.info('searching for stills for {}'.format(self.vid_name))
+
+            for dirpath, dirnames, filenames in os.walk(search_path):
+                for thing in filenames:
+                    split = os.path.splitext(thing)
+                    if split[0].lower().endswith('hd'):
+                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
+                        break
+                    elif split[0].lower().endswith('raw'):
+                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
+                        break
+
+    def _set_stills_paths(self, still, still_path):
+        self.paths['poster'] = still_path
+        self.paths['thumbnail'] = still_path
+        logger.info('found {}'.format(still))
 
 
 class Brightcove(object):
@@ -122,13 +162,11 @@ class Brightcove(object):
                 'sourceid': video.source_id,
                 'musictrack': video.music_track,
                 'musictrackauthor': video.music_track_author,
-                'musictrackurl': video.music_track_url,
+                'musictrackurl': video.urls['music_track'],
                 'filename': video.filename,
-                # 'publisheddate': videoFromFile.PublishedDate,
-                # 'ytvideoUrl': videoFromFile.YTVideoURL
             },
             'link': {
-                'url': video.recipe_url,
+                'url': video.urls['recipe'],
                 'text': '',
             }
         }
@@ -173,36 +211,40 @@ class Brightcove(object):
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
 
-    def upload(self, video):
+    def get_upload_urls(self, file, key):
         '''
         performs an authenticated request to discover a brightcove-provided
         location to securely upload a source file
         '''
         # obtain a file upload location
-        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}".format(pubid=self.pub_id, videoid=video.id, sourcefilename=video.name)
+        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}".format(pubid=self.pub_id, videoid=video.id, sourcefilename=key)
         r = requests.get(url, headers=self._get_authorization_headers())
         upload_urls_response = r.json()
 
-        video.upload_url = upload_urls_response['signed_url']
-        video.ingest_url = upload_urls_response['api_request_url']
+        video.urls['upload'][key] = upload_urls_response['signed_url']
+        video.urls['ingest'][key] = upload_urls_response['api_request_url']
 
         if r.status_code == 200:
-            logger.info('received upload url for {}'.format(video.filename))
+            logger.info('received upload url for {}'.format(key))
         else:
-            logger.error('did not receive upload url for {}'.format(video.filename))
+            logger.error('did not receive upload url for {}'.format(key))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
 
+    def upload(self, video, key):
+        '''
+        upload file to url provided by get_upload_url()
+        '''
         # Upload the contents of our local file to the location provided via HTTP PUT
         # This is not recommended for large files
-        with open(video.path, 'rb') as fh:
+        with open(video.paths[key], 'rb') as fh:
             logger.info('uploading...')
-            s = requests.put(video.upload_url, data=fh.read())
+            s = requests.put(video.urls['upload'][key], data=fh.read())
 
         if s.status_code == 200:
-            logger.info('{} uploaded'.format(video.filename))
+            logger.info('{} uploaded for {}'.format(key, video.name))
         else:
-            logger.error('unable to upload {}'.format(video.filename))
+            logger.error('unable to upload {} for {}'.format(key, video.name))
             logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
             logger.error(s.text)
 
@@ -214,19 +256,26 @@ class Brightcove(object):
         url = "https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests".format(pubid=self.pub_id, videoid=video.id)
 
         data = {
-            "master": {
-                "url": '{}'.format(video.ingest_url)
+            'master': {
+                'url': '{}'.format(video.urls['ingest']['video'])
             },
-            "profile": "videocloud-default-v1"
+            'profile': 'videocloud-default-v1',
         }
+
+        for word in ['poster', 'thumbnail']:
+            if video.urls['ingest'][word]:
+                data[word] = {
+                    'url': video.urls['ingest'][word]
+                }
+                data['capture-images'] = False
 
         json_data = json.dumps(data)
         r = requests.post(url, headers=self._get_authorization_headers(), data=json_data)
 
         if r.status_code == 200:
-            logger.info('{} ingested'.format(video.filename))
+            logger.info('files for {} ingested'.format(video.name))
         else:
-            logger.error('unable to ingest {}'.format(video.filename))
+            logger.error('unable to ingest files for {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
 
@@ -244,7 +293,11 @@ if __name__ == '__main__':
     if not search:
         brightcove.create_video(video)
         brightcove.move_to_folder(video)
-        brightcove.upload(video)
+
+        for key in video.paths.keys():
+            brightcove.get_upload_urls(video, key)
+            brightcove.upload(video, key)
+
         brightcove.di_request(video)
     else:
-        logger.info('{} found, moving on...'.format(video.filename))
+        logger.info('{} exists, moving on...'.format(video.filename))
