@@ -5,13 +5,15 @@
 import os
 import json
 import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import logging
+import logging.config
 import bright_brick_road
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/Plank_smoked_salmon_UK.mp4'
+filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/localizedVP9/Plank_smoked_salmon_UK.webm'
 
 
 class Video(object):
@@ -32,13 +34,16 @@ class Video(object):
         self.published_date = None
         self.youtube_url = None
         self.id = None
-        self.brightcove_details = None
+        self.json = None
+        self.upload_url = None
 
 
 class Brightcove(object):
     '''methods for interacting with Brightcove CMS and DI APIs'''
 
     def __init__(self):
+        logger.info('* * * * * * * * * * * * * * * * * * * *')
+        logger.info('initializing brightcove class...')
         self.pub_id = bright_brick_road.pub_id
         self.folders = self._get_folders()
 
@@ -54,8 +59,13 @@ class Brightcove(object):
         access_token = None
 
         r = requests.post(access_token_url, params="grant_type=client_credentials", auth=(client_id, client_secret), verify=False)
+
         if r.status_code == 200:
             access_token = r.json().get('access_token')
+        else:
+            logger.error('unable to get acces token from brightcove')
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
@@ -66,7 +76,14 @@ class Brightcove(object):
         folders = {}
 
         url = 'https://cms.api.brightcove.com/v1/accounts/{}/folders'.format(self.pub_id)
-        r = requests.get(url, headers=self.get_authorization_headers())
+        r = requests.get(url, headers=self._get_authorization_headers())
+
+        if r.status_code == 200:
+            logger.info('got folder list')
+        else:
+            logger.error('unable to get folder list')
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
         for folder in r.json():
             folders[folder['name'].lower()] = folder['id']
@@ -81,15 +98,20 @@ class Brightcove(object):
         r = requests.get(url, headers=self._get_authorization_headers())
 
         if r.status_code == 200:
-            return r.json()
+            found_vid = r.json()
+            logger.info('reference id {} exists as "{}" [original filename: {}]'.format(ref_id, found_vid['name'], found_vid['original_filename']))
+            video.id = found_vid['id']
+            video.json = found_vid
+            return found_vid
         else:
+            logger.info('video with reference_id {} does not exist'.format(ref_id))
             return None
 
     def create_video(self, video):
         '''
         CMS API call to create a video in the VideoCloud catalog
         '''
-        url = ("https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/").format(pubid=self.pub_id)
+        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
             'name': video.name,
             'state': video.state,
@@ -113,56 +135,85 @@ class Brightcove(object):
         json_data = json.dumps(data)
         r = requests.post(url, headers=self._get_authorization_headers(), data=json_data)
 
-        vid_deets = r.json()
-        video.brightcove_details = vid_deets
-        video.id = vid_deets['id']
+        if r.status_code == 201:
+            vid_deets = r.json()
+            video.json = vid_deets
+            video.id = vid_deets['id']
+            logger.info('created video object "{}"'.format(video.name))
+        else:
+            logger.error('unable to create video object "{}"'.format(video.name))
 
-    def drop_in_folder(self, video_id):
+    def move_to_folder(self, video):
         '''
         CMS API call to put video in corresponding country folder
         '''
         folder_id = self.folders[video.country]
-        url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}/folders/{folderid}/videos/{videoid}'.format(pubid=self.pub_id, folderid=folder_id, videoid=video_id)
-        r = requests.put(url, headers=self.get_authorization_headers())
+        url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}/folders/{folderid}/videos/{videoid}'.format(pubid=self.pub_id, folderid=folder_id, videoid=video.id)
+        r = requests.put(url, headers=self._get_authorization_headers())
 
-        return r.status_code
+        if r.status_code == 204:
+            logger.info('moved {} into {} folder'.format(video.name, video.country.upper()))
+        else:
+            logger.error('unable to move {} into {} folder'.format(video.name, video.country.upper()))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
-    def delete_video(self, video_id):
+    def delete_video(self, video):
         '''
         CMS API call to delete a video in the VideoCloud catalog
         '''
-        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}".format(pubid=self.pub_id, videoid=video_id)
+        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}".format(pubid=self.pub_id, videoid=video.id)
         r = requests.delete(url, headers=self._get_authorization_headers())
 
-        return r.status_code
+        if r.status_code == 204:
+            logger.info('{} was either deleted or not found'.format(video.name))
+        else:
+            logger.error('unable to delete {}'.format(video.name))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
-    def upload(self, video_id, filepath, source_filename):
+    def upload(self, video):
         '''
-        performs an authenticated request to discover a Brightcove-provided location
-        to securely upload a source file
+        performs an authenticated request to discover a brightcove-provided
+        location to securely upload a source file
         '''
-        # Perform an authorized request to obtain a file upload location
-        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}".format(pubid=self.pub_id, videoid=video_id, sourcefilename=source_filename)
+        # obtain a file upload location
+        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}".format(pubid=self.pub_id, videoid=video.id, sourcefilename=video.name)
         r = requests.get(url, headers=self._get_authorization_headers())
         upload_urls_response = r.json()
+
+        video.upload_url = upload_urls_response['signed_url']
+
+        if r.status_code == 200:
+            logger.info('received upload url for {}'.format(video.filename))
+        else:
+            logger.error('did not receive upload url for {}'.format(video.filename))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
         # Upload the contents of our local file to the location provided via HTTP PUT
         # This is not recommended for large files
         with open(filepath, 'rb') as fh:
+            logger.info('uploading...')
             s = requests.put(upload_urls_response['signed_url'], data=fh.read())
 
-        return (upload_urls_response, s.status_code)
+        if s.status_code == 200:
+            logger.info('{} uploaded'.format(video.filename))
+        else:
+            logger.error('unable to upload {}'.format(video.filename))
+            logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
+            logger.error(s.text)
 
-    def di_request(self, video_id, upload_urls_response):
+    def di_request(self, video):
         '''
         Ingest API call to populate a video with transcoded renditions
         from a remotely accessible source asset
         '''
-        url = "https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests".format(pubid=self.pub_id, videoid=video_id)
+        url = "https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests".format(pubid=self.pub_id, videoid=video.id)
 
         data = {
             "master": {
-                "url": '{}'.format(upload_urls_response['api_request_url'])
+                "url": '{}'.format(video.upload_url)
             },
             "profile": "videocloud-default-v1"
         }
@@ -170,13 +221,28 @@ class Brightcove(object):
         json_data = json.dumps(data)
         r = requests.post(url, headers=self._get_authorization_headers(), data=json_data)
 
-        return r.status_code
+        if r.status_code == 200:
+            logger.info('{} ingested'.format(video.filename))
+        else:
+            logger.error('unable to ingest {}'.format(video.filename))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
 
 if __name__ == '__main__':
+    logging.config.fileConfig('log.conf')
+    logger = logging.getLogger('log')
+    logger.info('* * * * * * * * * * * * * * * * * * * * \n')
+
     video = Video(filepath)
     brightcove = Brightcove()
 
-    vid = brightcove.create_video(video)
-    upload_response = brightcove.upload(video.id, video.path, video.filename)
-    brightcove.di_request(video.id, upload_response[0])
+    search = brightcove.search_for_video(video.reference_id)
+
+    if not search:
+        brightcove.create_video(video)
+        brightcove.move_to_folder(video)
+        brightcove.upload(video)
+        brightcove.di_request(video)
+    else:
+        logger.info('{} found, moving on...'.format(video.filename))
