@@ -23,7 +23,7 @@ class Video(object):
 
     basepath = '/Volumes/MACKEREL/Oven/Localization'
 
-    def __init__(self, path, music_list):
+    def __init__(self, path, music_list, source_id_dict):
         self.paths = {
             'video': path,
             'poster': None,
@@ -32,8 +32,9 @@ class Video(object):
         self.filename = os.path.split(self.paths['video'])[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
+        self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
         self.country = self.name[-2:].lower()
-        self.source_id = '30283-AU'
+        self.source_id = None
         self.reference_id = '42304-UK'
         self.state = 'INACTIVE'
         self.music_track = None
@@ -57,6 +58,7 @@ class Video(object):
 
         self._get_stills_paths()
         self._get_music_info(music_list)
+        self._get_source_ids(source_id_dict)
 
     def _get_stills_paths(self):
         '''
@@ -90,13 +92,22 @@ class Video(object):
         find music track, author, and source url from list of spreadsheet records
         '''
         vid_name = self.vid_name.replace('_', ' ').lower()
-        # vid_row = self.sheets['music'].find(vid_name)
 
         for i in range(len(music_list)):
             if music_list[i]['VIDEO'].lower().strip() == vid_name:
                 self.music_track = music_list[i]['Music Title']
                 self.music_track_author = music_list[i]['Musician/Composer']
                 self.urls['music_track'] = music_list[i]['Link to the Music Website']
+
+    def _get_source_ids(self, source_id_dict):
+        '''
+        find source ids from list of spreadsheet records
+        '''
+        vid_name = self.vid_name.replace('_', ' ').lower()
+
+        for key in source_id_dict.keys():
+            if key.lower().strip() == vid_name:
+                self.source_id = source_id_dict[key]
 
 
 class Brightcove(object):
@@ -310,6 +321,7 @@ class Spreadsheet(object):
         self.gc = self._authenticate()
         self.sheets = self._get_sheets()
         self.music_list = self._compile_music()
+        self.source_dict = self._compile_sources()
 
     def _authenticate(self):
         '''
@@ -348,6 +360,12 @@ class Spreadsheet(object):
 
         return self.sheets['music'].get_all_records()
 
+    def _compile_sources(self):
+        logger.info('compiling source_ID list...')
+        records_list = [self.sheets[key].get_all_records() for key in ['pending', 'completed', 'completed_US']]
+
+        return {records_list[i][j]['VIDEO']: records_list[i][j]['SOURCE ID'] for i in range(len(records_list)) for j in range(len(records_list[i]))}
+
 
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
@@ -355,8 +373,8 @@ if __name__ == '__main__':
     logger.info('* * * * * * * * * * * * * * * * * * * * \n')
 
     brightcove = Brightcove()
-    spreadsheet = Spreadsheet()
-    video = Video(filepath, spreadsheet.music_list)
+    spreadsheets = Spreadsheet()
+    video = Video(filepath, spreadsheets.music_list, spreadsheets.source_dict)
 
     # search for a video on brightcove with same reference id
     search = brightcove.search_for_video(video.reference_id)
