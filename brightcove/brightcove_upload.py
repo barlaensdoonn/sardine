@@ -5,6 +5,7 @@
 
 import os
 import json
+import shutil
 import requests
 import gspread
 import logging
@@ -27,12 +28,19 @@ class Video(object):
     basepath = '/Volumes/MACKEREL/Oven/Localization'
 
     def __init__(self, path, music_list, source_id_dict):
+        '''
+        self.paths['uploaded'] acts as a flag:
+        if the video was uploaded successfully, the path is made in brightcove.upload(),
+        and will evaluate to True in video.move(); if upload was unsuccessful,
+        it stays as None and evaluates to False, and video is not moved
+        '''
         self.paths = {
-            'video': path,
+            'source': path,
             'poster': None,
-            'thumbnail': None
+            'thumbnail': None,
+            'uploaded': None
         }
-        self.filename = os.path.split(self.paths['video'])[-1]
+        self.filename = os.path.split(self.paths['source'])[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
         self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
@@ -119,6 +127,11 @@ class Video(object):
                 break
         else:
             logger.warning('did not find source ID for {}'.format(self.vid_name))
+
+    def move(self):
+        if self.paths['uploaded']:
+            shutil.move(self.paths['source'], self.paths['uploaded'])
+            logger.info('{} moved to local uploaded directory'.format(self.filename))
 
 
 class Brightcove(object):
@@ -286,6 +299,9 @@ class Brightcove(object):
 
         if s.status_code == 200:
             logger.info('{} uploaded for {}'.format(key, video.name))
+            # if video was uploaded successfully, set upload path, which acts as a flag for video.move()
+            if key == 'source':
+                video.paths['uploaded'] = os.path.join(uploaded_path, video.filename)
         else:
             logger.error('unable to upload {} for {}'.format(key, video.name))
             logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
@@ -405,6 +421,7 @@ if __name__ == '__main__':
 
         # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
         brightcove.di_request(video)
+        video.move()
         logger.info(' ')
     else:
         logger.info('{} exists, moving on...'.format(video.filename))
