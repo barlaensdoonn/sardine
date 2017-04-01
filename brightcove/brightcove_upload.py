@@ -21,8 +21,9 @@ filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/loca
 class Video(object):
     '''holds video info for input into Brightcove class'''
 
+    basepath = '/Volumes/MACKEREL/Oven/Localization'
+
     def __init__(self, path):
-        self.basepath = '/Volumes/MACKEREL/Oven/Localization'
         self.filename = os.path.split(self.paths['video'])[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
@@ -60,7 +61,7 @@ class Video(object):
         '''
         utility function to find stills to use for DI API poster and thumbnail images
         '''
-        search_path = os.path.join(self.basepath, self.vid_name, 'Stills')
+        search_path = os.path.join(basepath, self.vid_name, 'Stills')
 
         if os.path.isdir(search_path):
             logger.info('searching for stills for {}'.format(self.vid_name))
