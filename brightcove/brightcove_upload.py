@@ -61,7 +61,7 @@ class Video(object):
         '''
         utility function to find stills to use for DI API poster and thumbnail images
         '''
-        search_path = os.path.join(basepath, self.vid_name, 'Stills')
+        search_path = os.path.join(Video.basepath, self.vid_name, 'Stills')
 
         if os.path.isdir(search_path):
             logger.info('searching for stills for {}'.format(self.vid_name))
