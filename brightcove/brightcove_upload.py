@@ -23,7 +23,12 @@ class Video(object):
 
     basepath = '/Volumes/MACKEREL/Oven/Localization'
 
-    def __init__(self, path):
+    def __init__(self, path, music_list):
+        self.paths = {
+            'video': path,
+            'poster': None,
+            'thumbnail': None
+        }
         self.filename = os.path.split(self.paths['video'])[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
@@ -31,17 +36,12 @@ class Video(object):
         self.source_id = '30283-AU'
         self.reference_id = '42304-UK'
         self.state = 'INACTIVE'
-        self.music_track = 'Sugar Zone'
-        self.music_track_author = 'Silent Partner'
+        self.music_track = None
+        self.music_track_author = None
         self.id = None
         self.json = None
-        self.paths = {
-            'video': path,
-            'poster': None,
-            'thumbnail': None
-        }
         self.urls = {
-            'music_track': 'https://www.youtube.com/audiolibrary/music',
+            'music_track': None,
             'recipe': 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx',
             'upload': {
                 'video': None,
@@ -56,6 +56,7 @@ class Video(object):
         }
 
         self._get_stills_paths()
+        self._get_music_info(music_list)
 
     def _get_stills_paths(self):
         '''
@@ -77,9 +78,25 @@ class Video(object):
                         break
 
     def _set_stills_paths(self, still, still_path):
+        '''
+        used by _get_stills_paths
+        '''
         self.paths['poster'] = still_path
         self.paths['thumbnail'] = still_path
         logger.info('found {}'.format(still))
+
+    def _get_music_info(self, music_list):
+        '''
+        find music track, author, and source url from list of spreadsheet records
+        '''
+        vid_name = self.vid_name.replace('_', ' ').lower()
+        # vid_row = self.sheets['music'].find(vid_name)
+
+        for i in range(len(music_list)):
+            if music_list[i]['VIDEO'].lower().strip() == vid_name:
+                self.music_track = music_list[i]['Music Title']
+                self.music_track_author = music_list[i]['Musician/Composer']
+                self.urls['music_track'] = music_list[i]['Link to the Music Website']
 
 
 class Brightcove(object):
@@ -118,32 +135,33 @@ class Brightcove(object):
         map country code to Brightcove folder ids
         '''
         folders = {}
+        logger.info('getting folder list...')
 
         url = 'https://cms.api.brightcove.com/v1/accounts/{}/folders'.format(self.pub_id)
         r = requests.get(url, headers=self._get_authorization_headers())
 
         if r.status_code == 200:
-            logger.info('got folder list')
+            for folder in r.json():
+                folders[folder['name'].lower()] = folder['id']
+
+            return folders
         else:
             logger.error('unable to get folder list')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
 
-        for folder in r.json():
-            folders[folder['name'].lower()] = folder['id']
-
-        return folders
-
     def search_for_video(self, ref_id):
         '''
         CMS API call to search for existing video by reference id
         '''
+        logger.info('searching for reference_id {} on brightcove...'.format(ref_id))
+
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/ref:{refid}".format(pubid=self.pub_id, refid=ref_id)
         r = requests.get(url, headers=self._get_authorization_headers())
 
         if r.status_code == 200:
             found_vid = r.json()
-            logger.info('reference id {} exists as "{}" [original filename: {}]'.format(ref_id, found_vid['name'], found_vid['original_filename']))
+            logger.info('reference id {} exists as "{}"'.format(ref_id, found_vid['name']))
             video.id = found_vid['id']
             video.json = found_vid
             return found_vid
@@ -288,32 +306,57 @@ class Spreadsheet(object):
 
     music_tracks_key = bright_brick_road.music_tracks_key
 
-    def authenticate(self):
+    def __init__(self):
+        self.gc = self._authenticate()
+        self.sheets = self._get_sheets()
+        self.music_list = self._compile_music()
+
+    def _authenticate(self):
         '''
-        authenticates account with Google drive and sets class variable
-        for relevant spreadsheet tabs in the Master List
+        authenticate with Google drive
         '''
         logger.info('authenticating to Google Sheets...')
-
         scope = ['https://spreadsheets.google.com/feeds']
         credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
 
-        self.gc = gspread.authorize(credentials)
+        return gspread.authorize(credentials)
 
-        # sheet = gc.open("Allrecipes Master Video List")
-        # master_list_pending = sheet.worksheet('Localization Pending')
-        # master_list_completed = sheet.worksheet('Localization Completed')
-        # master_list_completed_US = sheet.worksheet('Localization Completed - US Videos')
-        #
-        # self.spreadsheets = (master_list_pending, master_list_completed, master_list_completed_US)
+    def _get_sheets(self):
+        '''
+        get spreadsheet objects from authenticated google drive instance
+        '''
+        logger.info('getting spreadsheets...')
+        music = self.gc.open_by_key(Spreadsheet.music_tracks_key)
+        master = self.gc.open("Allrecipes Master Video List")
+
+        sheet_music = music.worksheet("Music Tracks")
+        master_list_pending = master.worksheet('Localization Pending')
+        master_list_completed = master.worksheet('Localization Completed')
+        master_list_completed_US = master.worksheet('Localization Completed - US Videos')
+
+        sheets = {
+            'music': sheet_music,
+            'pending': master_list_pending,
+            'completed': master_list_completed,
+            'completed_US': master_list_completed_US
+        }
+
+        return sheets
+
+    def _compile_music(self):
+        logger.info('compiling music list...')
+
+        return self.sheets['music'].get_all_records()
+
 
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
     logger = logging.getLogger('log')
     logger.info('* * * * * * * * * * * * * * * * * * * * \n')
 
-    video = Video(filepath)
     brightcove = Brightcove()
+    spreadsheet = Spreadsheet()
+    video = Video(filepath, spreadsheet.music_list)
 
     # search for a video on brightcove with same reference id
     search = brightcove.search_for_video(video.reference_id)
@@ -331,5 +374,6 @@ if __name__ == '__main__':
 
         # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
         brightcove.di_request(video)
+        logger.info(' ')
     else:
         logger.info('{} exists, moving on...'.format(video.filename))
