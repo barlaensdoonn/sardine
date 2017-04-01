@@ -5,9 +5,11 @@
 import os
 import json
 import requests
+import gspread
 import logging
 import logging.config
 import bright_brick_road
+from oauth2client.service_account import ServiceAccountCredentials
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -20,11 +22,6 @@ class Video(object):
     '''holds video info for input into Brightcove class'''
 
     def __init__(self, path):
-        self.paths = {
-            'video': path,
-            'poster': None,
-            'thumbnail': None
-        }
         self.basepath = '/Volumes/MACKEREL/Oven/Localization'
         self.filename = os.path.split(self.paths['video'])[-1]
         self.name = os.path.splitext(self.filename)[0]
@@ -37,6 +34,11 @@ class Video(object):
         self.music_track_author = 'Silent Partner'
         self.id = None
         self.json = None
+        self.paths = {
+            'video': path,
+            'poster': None,
+            'thumbnail': None
+        }
         self.urls = {
             'music_track': 'https://www.youtube.com/audiolibrary/music',
             'recipe': 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx',
@@ -279,6 +281,30 @@ class Brightcove(object):
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
 
+
+class Spreadsheet(object):
+    '''methods for interacting with Google Drive spreadsheets'''
+
+    music_tracks_key = bright_brick_road.music_tracks_key
+
+    def authenticate(self):
+        '''
+        authenticates account with Google drive and sets class variable
+        for relevant spreadsheet tabs in the Master List
+        '''
+        logger.info('authenticating to Google Sheets...')
+
+        scope = ['https://spreadsheets.google.com/feeds']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
+
+        self.gc = gspread.authorize(credentials)
+
+        # sheet = gc.open("Allrecipes Master Video List")
+        # master_list_pending = sheet.worksheet('Localization Pending')
+        # master_list_completed = sheet.worksheet('Localization Completed')
+        # master_list_completed_US = sheet.worksheet('Localization Completed - US Videos')
+        #
+        # self.spreadsheets = (master_list_pending, master_list_completed, master_list_completed_US)
 
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
