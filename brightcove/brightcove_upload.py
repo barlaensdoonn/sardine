@@ -36,6 +36,7 @@ class Video(object):
         self.id = None
         self.json = None
         self.upload_url = None
+        self.ingest_url = None
 
 
 class Brightcove(object):
@@ -166,7 +167,7 @@ class Brightcove(object):
         r = requests.delete(url, headers=self._get_authorization_headers())
 
         if r.status_code == 204:
-            logger.info('{} was either deleted or not found'.format(video.name))
+            logger.info('{} was deleted'.format(video.name))
         else:
             logger.error('unable to delete {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
@@ -183,6 +184,7 @@ class Brightcove(object):
         upload_urls_response = r.json()
 
         video.upload_url = upload_urls_response['signed_url']
+        video.ingest_url = upload_urls_response['api_request_url']
 
         if r.status_code == 200:
             logger.info('received upload url for {}'.format(video.filename))
@@ -193,9 +195,9 @@ class Brightcove(object):
 
         # Upload the contents of our local file to the location provided via HTTP PUT
         # This is not recommended for large files
-        with open(filepath, 'rb') as fh:
+        with open(video.path, 'rb') as fh:
             logger.info('uploading...')
-            s = requests.put(upload_urls_response['signed_url'], data=fh.read())
+            s = requests.put(video.upload_url, data=fh.read())
 
         if s.status_code == 200:
             logger.info('{} uploaded'.format(video.filename))
@@ -213,7 +215,7 @@ class Brightcove(object):
 
         data = {
             "master": {
-                "url": '{}'.format(video.upload_url)
+                "url": '{}'.format(video.ingest_url)
             },
             "profile": "videocloud-default-v1"
         }
