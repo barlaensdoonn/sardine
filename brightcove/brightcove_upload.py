@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # brightcove playground
 # 3/30/17
+# updated 4/1/17
 
 import os
 import json
@@ -16,6 +17,8 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/localizedVP9/Plank_smoked_salmon_UK.webm'
+search_path = bright_brick_road.search_path_home
+uploaded_path = bright_brick_road.uploaded_home
 
 
 class Video(object):
@@ -64,12 +67,10 @@ class Video(object):
         '''
         utility function to find stills to use for DI API poster and thumbnail images
         '''
-        search_path = os.path.join(Video.basepath, self.vid_name, 'Stills')
+        still_path = os.path.join(Video.basepath, self.vid_name, 'Stills')
 
-        if os.path.isdir(search_path):
-            logger.info('searching for stills for {}'.format(self.vid_name))
-
-            for dirpath, dirnames, filenames in os.walk(search_path):
+        if os.path.isdir(still_path):
+            for dirpath, dirnames, filenames in os.walk(still_path):
                 for thing in filenames:
                     split = os.path.splitext(thing)
                     if split[0].lower().endswith('hd'):
@@ -78,6 +79,8 @@ class Video(object):
                     elif split[0].lower().endswith('raw'):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         break
+                else:
+                    logger.warning('did not find stills for {}'.format(self.vid_name))
 
     def _set_stills_paths(self, still, still_path):
         '''
@@ -87,17 +90,21 @@ class Video(object):
         self.paths['thumbnail'] = still_path
         logger.info('found {}'.format(still))
 
-    def _get_music_info(self, music_list):
+    def _get_music_info(self, music_dict):
         '''
         find music track, author, and source url from list of spreadsheet records
         '''
         vid_name = self.vid_name.replace('_', ' ').lower()
 
-        for i in range(len(music_list)):
-            if music_list[i]['VIDEO'].lower().strip() == vid_name:
-                self.music_track = music_list[i]['Music Title']
-                self.music_track_author = music_list[i]['Musician/Composer']
-                self.urls['music_track'] = music_list[i]['Link to the Music Website']
+        for key in music_dict.keys():
+            if key.lower().strip() == vid_name:
+                self.music_track = music_dict[key]['music_track']
+                self.music_track_author = music_dict[key]['music_track_author']
+                self.urls['music_track'] = music_dict[key]['source_url']
+                logger.info('found music info for {}'.format(self.name))
+                break
+        else:
+            logger.warning('did not find music info for {}'.format(self.vid_name))
 
     def _get_source_ids(self, source_id_dict):
         '''
@@ -108,6 +115,10 @@ class Video(object):
         for key in source_id_dict.keys():
             if key.lower().strip() == vid_name:
                 self.source_id = source_id_dict[key]
+                logger.info('found source ID for {}'.format(self.name))
+                break
+        else:
+            logger.warning('did not find source ID for {}'.format(self.vid_name))
 
 
 class Brightcove(object):
@@ -210,7 +221,7 @@ class Brightcove(object):
             vid_deets = r.json()
             video.json = vid_deets
             video.id = vid_deets['id']
-            logger.info('created video object "{}"'.format(video.name))
+            logger.info('created video object "{}" on brightcove'.format(video.name))
         else:
             logger.error('unable to create video object "{}"'.format(video.name))
 
@@ -237,7 +248,7 @@ class Brightcove(object):
         r = requests.delete(url, headers=self._get_authorization_headers())
 
         if r.status_code == 204:
-            logger.info('{} was deleted'.format(video.name))
+            logger.info('{} deleted from brightcove'.format(video.name))
         else:
             logger.error('unable to delete {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
@@ -316,11 +327,12 @@ class Spreadsheet(object):
     '''methods for interacting with Google Drive spreadsheets'''
 
     music_tracks_key = bright_brick_road.music_tracks_key
+    master_list_key = bright_brick_road.master_list_key
 
     def __init__(self):
         self.gc = self._authenticate()
         self.sheets = self._get_sheets()
-        self.music_list = self._compile_music()
+        self.music_dict = self._compile_music()
         self.source_dict = self._compile_sources()
 
     def _authenticate(self):
@@ -339,7 +351,7 @@ class Spreadsheet(object):
         '''
         logger.info('getting spreadsheets...')
         music = self.gc.open_by_key(Spreadsheet.music_tracks_key)
-        master = self.gc.open("Allrecipes Master Video List")
+        master = self.gc.open_by_key(Spreadsheet.master_list_key)
 
         sheet_music = music.worksheet("Music Tracks")
         master_list_pending = master.worksheet('Localization Pending')
@@ -357,8 +369,9 @@ class Spreadsheet(object):
 
     def _compile_music(self):
         logger.info('compiling music list...')
+        music_list = self.sheets['music'].get_all_records()
 
-        return self.sheets['music'].get_all_records()
+        return {music_list[i]['VIDEO']: {'music_track': music_list[i]['Music Title'], 'music_track_author': music_list[i]['Musician/Composer'], 'source_url': music_list[i]['Link to the Music Website']} for i in range(len(music_list))}
 
     def _compile_sources(self):
         logger.info('compiling source_ID list...')
@@ -374,7 +387,7 @@ if __name__ == '__main__':
 
     brightcove = Brightcove()
     spreadsheets = Spreadsheet()
-    video = Video(filepath, spreadsheets.music_list, spreadsheets.source_dict)
+    video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
 
     # search for a video on brightcove with same reference id
     search = brightcove.search_for_video(video.reference_id)
