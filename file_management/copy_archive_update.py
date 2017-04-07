@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
+# updated: 4/7/17
 
 import gspread
 import os
@@ -109,7 +110,7 @@ class Copier(object):
             "AU": "/Volumes/public/International/Editorial/Video/Videos by country/AU/_New videos",
             "BR": "/Volumes/public/International/Editorial/Video/Videos by country/BR/_New videos",
             "DE": "/Volumes/public/International/Editorial/Video/Videos by country/DE/_New videos",
-            "FR": "/Users/baleson/Google Drive/Videos for review",
+            "FR": os.path.join(windy_paths.base_path, 'Google Drive/Videos for review'),
             "IT": "/Volumes/public/International/Editorial/Video/Videos by country/IT/_New videos",
             "MX": "/Volumes/public/International/Editorial/Video/Videos by country/MX/_New videos",
             "NL": "/Volumes/public/International/Editorial/Video/Videos by country/NL/_New videos",
