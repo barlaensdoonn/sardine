@@ -86,6 +86,7 @@ class Copier(object):
         self.duplicates = {}
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
         self.stats = {flags[i]: [] for i in range(len(flags))}
+        self.dropbox_paths = {country: os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}'.format(country)) for country in self.countries}
 
         self.stills_paths = {
             '250': '/Volumes/public/International/Editorial/Video/Recipe Images/250x250',
@@ -145,6 +146,15 @@ class Copier(object):
             print("didn't find any stills to copy")
 
         print('\n')
+
+    def _copy_dropbox(self, country, file_name, src_file):
+        drop = os.path.join(self.dropbox_paths[country], file_name)
+
+        if os.path.exists(drop):
+            print("removing old {} from dropbox country folder...".format(file_name))
+            os.remove(drop)
+        print("copying new {} to dropbox country folder...".format(file_name))
+        shutil.copy2(src_file, drop)
 
     def clean_up(self):
         '''
@@ -252,6 +262,9 @@ class Copier(object):
                 os.remove(country_path)
             print("copying new {} to country folder...\n".format(file_name))
             shutil.copy2(src_file, country_path)
+
+            self._copy_dropbox(country, file_name, src_file)
+
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
         else:
