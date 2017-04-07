@@ -1,4 +1,5 @@
 .DS_Store
+rename_by_parent_dir.py
 copy_archive_update_old.py
 notepad.py
 windy_paths.py
