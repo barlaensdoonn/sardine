@@ -208,26 +208,26 @@ class Copier(object):
         if it doesn't find /vid_name anywhere, returns dst_file with no_copy_dir plus "not_found" skip flag
         '''
         for key in self.archive_paths:
-            for dir in os.scandir(self.archive_paths[key]):
-                if dir.name == vid_name:
-                    if not os.path.exists(os.path.join(dir.path, self.export_path)):
+            for thing in os.scandir(self.archive_paths[key]):
+                if thing.name == vid_name:
+                    if not os.path.exists(os.path.join(thing.path, self.export_path)):
                         print("{} improperly set up for {}".format(self.export_path, vid_name))
                         print("creating {} directory".format(os.path.join(vid_name, self.export_path)))
-                        os.mkdir(os.path.join(dir.path, self.export_path))
+                        os.mkdir(os.path.join(thing.path, self.export_path))
 
                     if key == 'video_localized':
                         flag = "copy_zip"
-                        backup_src = dir.path
+                        backup_src = thing.path
 
                     elif key == 'video_localized_US':
                         flag = "copy_zip_US"
-                        backup_src = dir.path
+                        backup_src = thing.path
 
                     else:
                         flag = "copy"
                         backup_src = None
 
-                    dst_file = os.path.join(dir.path, self.export_path, file_name)
+                    dst_file = os.path.join(thing.path, self.export_path, file_name)
 
                     return dst_file, backup_src, flag
 
@@ -260,11 +260,12 @@ class Copier(object):
             if os.path.exists(country_path):
                 print("removing old {} from country folder...".format(file_name))
                 os.remove(country_path)
-            print("copying new {} to country folder...\n".format(file_name))
+            print("copying new {} to country folder...".format(file_name))
             shutil.copy2(src_file, country_path)
 
             self._copy_dropbox(country, file_name, src_file)
 
+            print("moving {} to brightcove folder\n".format(file_name))
             shutil.move(src_file, os.path.join(self.copied_dir, file_name))
 
         else:
@@ -340,5 +341,6 @@ if __name__ == '__main__':
             except Exception as e:
                 print('could not update spreadsheet for {}:'.format(vid_name))
                 traceback.print_exc()
+                print("\n")
 
     copier.print_report()
