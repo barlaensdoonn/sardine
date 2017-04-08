@@ -34,13 +34,8 @@ class Video(object):
         and will evaluate to True in video.move(); if upload was unsuccessful,
         it stays as None and evaluates to False, and video is not moved
         '''
-        self.paths = {
-            'source': os.path.abspath(filename),
-            'poster': None,
-            'thumbnail': None,
-            'uploaded': None
-        }
-        self.filename = os.path.split(self.paths['source'])[-1]
+
+        self.filename = filename
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
         self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
@@ -52,6 +47,18 @@ class Video(object):
         self.music_track_author = None
         self.id = None
         self.json = None
+
+        self._get_stills_paths()
+        self._get_music_info(music_list)
+        self._get_source_ids(source_id_dict)
+
+        self.paths = {
+            'source': os.path.abspath(filename),
+            'poster': None,
+            'thumbnail': None,
+            'uploaded': None
+        }
+
         self.urls = {
             'music_track': None,
             'recipe': 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx',
@@ -66,10 +73,6 @@ class Video(object):
                 'thumbnail': None
             }
         }
-
-        self._get_stills_paths()
-        self._get_music_info(music_list)
-        self._get_source_ids(source_id_dict)
 
     def _get_stills_paths(self):
         '''
