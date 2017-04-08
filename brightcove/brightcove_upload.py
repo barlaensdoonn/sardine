@@ -27,7 +27,7 @@ class Video(object):
 
     basepath = '/Volumes/MACKEREL/Oven/Localization'
 
-    def __init__(self, path, music_list, source_id_dict):
+    def __init__(self, filename, music_list, source_id_dict):
         '''
         self.paths['uploaded'] acts as a flag:
         if the video was uploaded successfully, the path is made in brightcove.upload(),
@@ -35,7 +35,7 @@ class Video(object):
         it stays as None and evaluates to False, and video is not moved
         '''
         self.paths = {
-            'source': path,
+            'source': os.path.abspath(filename),
             'poster': None,
             'thumbnail': None,
             'uploaded': None
@@ -403,26 +403,30 @@ if __name__ == '__main__':
 
     brightcove = Brightcove()
     spreadsheets = Spreadsheet()
-    video = Video(search_path, spreadsheets.music_dict, spreadsheets.source_dict)
 
-    # search for a video on brightcove with same reference id
-    search = brightcove.search_for_video(video.reference_id)
+    for dirpath, dirnames, filenames in os.walk(search_path):
+        for filename in filenames:
+            video = Video(filename, spreadsheets.music_dict, spreadsheets.source_dict)
 
-    if not search:
-        # if no video found, create new video object and move it into the corresponding country folder
-        brightcove.create_video(video)
-        brightcove.move_to_folder(video)
+            # search for a video on brightcove with same reference id
+            search = brightcove.search_for_video(video.reference_id)
 
-    elif search:
-        logger.info('{} exists, replacing source file...'.format(video.filename))
+            if not search:
+                # if no video found, create new video object and move it into the corresponding country folder
+                brightcove.create_video(video)
+                brightcove.move_to_folder(video)
 
-    # get upload urls for video file (and stills if they exist), then upload
-    for key in video.paths.keys():
-        if video.paths[key]:
-            brightcove.get_upload_urls(video, key)
-            brightcove.upload(video, key)
+            elif search:
+                # else if video found, let us know we'll be replacing it
+                logger.info('{} exists, replacing source file...'.format(video.filename))
 
-    # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
-    brightcove.di_request(video)
-    video.move()
-    logger.info(' ')
+            # get upload urls for video file (and stills if they exist), then upload
+            for key in video.paths.keys():
+                if video.paths[key]:
+                    brightcove.get_upload_urls(video, key)
+                    brightcove.upload(video, key)
+
+            # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
+            brightcove.di_request(video)
+            video.move()
+            logger.info(' ')
