@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # brightcove playground
 # 3/30/17
-# updated 4/1/17
+# updated 4/5/17
 
 import os
 import json
@@ -17,9 +17,9 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/localizedVP9/Plank_smoked_salmon_UK.webm'
-search_path = bright_brick_road.search_path_home
-uploaded_path = bright_brick_road.uploaded_home
+# filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/localizedVP9/Plank_smoked_salmon_UK.webm'
+search_path = bright_brick_road.search_path
+uploaded_path = bright_brick_road.uploaded
 
 
 class Video(object):
@@ -403,7 +403,7 @@ if __name__ == '__main__':
 
     brightcove = Brightcove()
     spreadsheets = Spreadsheet()
-    video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
+    video = Video(search_path, spreadsheets.music_dict, spreadsheets.source_dict)
 
     # search for a video on brightcove with same reference id
     search = brightcove.search_for_video(video.reference_id)
@@ -413,15 +413,16 @@ if __name__ == '__main__':
         brightcove.create_video(video)
         brightcove.move_to_folder(video)
 
-        # get upload urls for video file (and stills if they exist), then upload
-        for key in video.paths.keys():
-            if video.paths[key]:
-                brightcove.get_upload_urls(video, key)
-                brightcove.upload(video, key)
+    elif search:
+        logger.info('{} exists, replacing source file...'.format(video.filename))
 
-        # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
-        brightcove.di_request(video)
-        video.move()
-        logger.info(' ')
-    else:
-        logger.info('{} exists, moving on...'.format(video.filename))
+    # get upload urls for video file (and stills if they exist), then upload
+    for key in video.paths.keys():
+        if video.paths[key]:
+            brightcove.get_upload_urls(video, key)
+            brightcove.upload(video, key)
+
+    # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
+    brightcove.di_request(video)
+    video.move()
+    logger.info(' ')
