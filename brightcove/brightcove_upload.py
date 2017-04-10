@@ -47,12 +47,11 @@ class Video(object):
         self.id = None
         self.json = None
 
-        self._get_stills_paths()
         self._get_music_info(music_list)
         self._get_source_ids(source_id_dict)
 
         self.paths = {
-            'source': os.path.abspath(filename),
+            'video': os.path.abspath(filename),
             'poster': None,
             'thumbnail': None,
             'uploaded': None
@@ -72,38 +71,6 @@ class Video(object):
                 'thumbnail': None
             }
         }
-
-    def _get_stills_paths(self):
-        '''
-        utility function to find stills to use for DI API poster and thumbnail images
-        '''
-        still_path = Video.stills_path
-
-        for dirpath, dirnames, filenames in os.walk(still_path):
-            for thing in filenames:
-                split = os.path.splitext(thing)
-
-                if split[0].lower().endswith('hd'):
-                    still_name = split[0][0:-3]
-                    if still_name == self.vid_name:
-                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
-                        break
-
-                elif split[0].lower().endswith('raw'):
-                    still_name = split[0][0:-4]
-                    if still_name == self.vid_name:
-                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
-                        break
-            else:
-                logger.warning('did not find stills for {}'.format(self.vid_name))
-
-    def _set_stills_paths(self, still, still_path):
-        '''
-        used by _get_stills_paths
-        '''
-        self.paths['poster'] = still_path
-        self.paths['thumbnail'] = still_path
-        logger.info('found {}'.format(still))
 
     def _get_music_info(self, music_dict):
         '''
@@ -134,6 +101,38 @@ class Video(object):
                 break
         else:
             logger.warning('did not find source ID for {}'.format(self.vid_name))
+
+    def _set_stills_paths(self, still, still_path):
+        '''
+        used by _get_stills_paths
+        '''
+        self.paths['poster'] = still_path
+        self.paths['thumbnail'] = still_path
+        logger.info('found {}'.format(still))
+
+    def get_stills_paths(self):
+        '''
+        utility function to find stills to use for DI API poster and thumbnail images
+        '''
+        still_path = Video.stills_path
+
+        for dirpath, dirnames, filenames in os.walk(still_path):
+            for thing in filenames:
+                split = os.path.splitext(thing)
+
+                if split[0].lower().endswith('hd'):
+                    still_name = split[0][0:-3]
+                    if still_name == self.vid_name:
+                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
+                        break
+
+                elif split[0].lower().endswith('raw'):
+                    still_name = split[0][0:-4]
+                    if still_name == self.vid_name:
+                        self._set_stills_paths(thing, os.path.join(dirpath, thing))
+                        break
+            else:
+                logger.warning('did not find stills for {}'.format(self.vid_name))
 
     def move(self):
         if self.paths['uploaded']:
@@ -443,15 +442,18 @@ if __name__ == '__main__':
                     brightcove.create_video(video)
                     brightcove.move_to_folder(video)
 
+                    # since it's a new video, find stills to upload
+                    video.get_stills_paths()
+
+                    # get upload urls for video file (and stills if they exist), then upload
+                    for key in video.paths.keys():
+                        if video.paths[key]:
+                            brightcove.get_upload_urls(video, key)
+                            brightcove.upload(video, key)
+
                 elif search:
                     # else if video found, let us know we'll be replacing it
                     logger.info('{} exists, replacing source file...'.format(video.filename))
-
-                # get upload urls for video file (and stills if they exist), then upload
-                for key in video.paths.keys():
-                    if video.paths[key]:
-                        brightcove.get_upload_urls(video, key)
-                        brightcove.upload(video, key)
 
                 # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
                 brightcove.di_request(video)
