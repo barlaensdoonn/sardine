@@ -134,7 +134,7 @@ class Video(object):
 
     def move(self):
         if self.paths['uploaded']:
-            shutil.move(self.paths['source'], self.paths['uploaded'])
+            shutil.move(self.paths['video'], self.paths['uploaded'])
             logger.info('{} moved to local uploaded directory'.format(self.filename))
 
 
@@ -305,7 +305,7 @@ class Brightcove(object):
         if s.status_code == 200:
             logger.info('{} uploaded for {}'.format(key, video.name))
             # if video was uploaded successfully, set upload path, which acts as a flag for video.move()
-            if key == 'source':
+            if key == 'video':
                 video.paths['uploaded'] = os.path.join(uploaded_path, video.filename)
         else:
             logger.error('unable to upload {} for {}'.format(key, video.name))
@@ -452,7 +452,7 @@ if __name__ == '__main__':
 
                 elif search:
                     # else if video found, let us know we'll be replacing it
-                    logger.info('{} exists, replacing source file...'.format(video.filename))
+                    logger.info('replacing source file with {}...'.format(video.filename))
 
                     # only upload video file, not stills
                     brightcove.get_upload_urls(video, 'video')
