@@ -40,7 +40,7 @@ class Video(object):
         self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
         self.country = self.name[-2:].lower()
         self.source_id = None
-        self.reference_id = '42304-UK'
+        self.reference_id = None
         self.state = 'INACTIVE'
         self.music_track = None
         self.music_track_author = None
@@ -453,6 +453,10 @@ if __name__ == '__main__':
                 elif search:
                     # else if video found, let us know we'll be replacing it
                     logger.info('{} exists, replacing source file...'.format(video.filename))
+
+                    # only upload video file, not stills
+                    brightcove.get_upload_urls(video, 'video')
+                    brightcove.upload(video, 'video')
 
                 # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
                 brightcove.di_request(video)
