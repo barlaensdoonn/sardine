@@ -118,21 +118,19 @@ class Video(object):
 
         for dirpath, dirnames, filenames in os.walk(still_path):
             for thing in filenames:
-                split = os.path.splitext(thing)
+                split = os.path.splitext(thing)[0]
 
-                if split[0].lower().endswith('hd'):
-                    still_name = split[0][0:-3]
-                    if still_name == self.vid_name:
+                if 'hd' in split.lower():
+                    if split.lower().startswith(self.vid_name.lower()):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         break
 
-                elif split[0].lower().endswith('raw'):
-                    still_name = split[0][0:-4]
-                    if still_name == self.vid_name:
+                elif 'raw' in split.lower():
+                    if split.lower().startswith(self.vid_name.lower()):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         break
-            else:
-                logger.warning('did not find stills for {}'.format(self.vid_name))
+        else:
+            logger.warning('did not find stills for {}'.format(self.vid_name))
 
     def move(self):
         if self.paths['uploaded']:
