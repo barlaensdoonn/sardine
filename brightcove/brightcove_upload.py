@@ -17,7 +17,6 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-# filepath = '/Volumes/MACKEREL/Oven/Localization/Plank_smoked_salmon/Exports/localizedVP9/Plank_smoked_salmon_UK.webm'
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
 
@@ -25,7 +24,7 @@ uploaded_path = bright_brick_road.uploaded
 class Video(object):
     '''holds video info for input into Brightcove class'''
 
-    basepath = '/Volumes/MACKEREL/Oven/Localization'
+    stills_path = bright_brick_road.stills_base_path
 
     def __init__(self, filename, music_list, source_id_dict):
         '''
@@ -34,7 +33,6 @@ class Video(object):
         and will evaluate to True in video.move(); if upload was unsuccessful,
         it stays as None and evaluates to False, and video is not moved
         '''
-
         self.filename = filename
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
