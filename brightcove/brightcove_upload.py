@@ -77,20 +77,25 @@ class Video(object):
         '''
         utility function to find stills to use for DI API poster and thumbnail images
         '''
-        still_path = os.path.join(Video.basepath, self.vid_name, 'Stills')
+        still_path = Video.stills_path
 
-        if os.path.isdir(still_path):
-            for dirpath, dirnames, filenames in os.walk(still_path):
-                for thing in filenames:
-                    split = os.path.splitext(thing)
-                    if split[0].lower().endswith('hd'):
+        for dirpath, dirnames, filenames in os.walk(still_path):
+            for thing in filenames:
+                split = os.path.splitext(thing)
+
+                if split[0].lower().endswith('hd'):
+                    still_name = split[0][0:-3]
+                    if still_name == self.vid_name:
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         break
-                    elif split[0].lower().endswith('raw'):
+
+                elif split[0].lower().endswith('raw'):
+                    still_name = split[0][0:-4]
+                    if still_name == self.vid_name:
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         break
-                else:
-                    logger.warning('did not find stills for {}'.format(self.vid_name))
+            else:
+                logger.warning('did not find stills for {}'.format(self.vid_name))
 
     def _set_stills_paths(self, still, still_path):
         '''
@@ -415,6 +420,10 @@ if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
     logger = logging.getLogger('log')
     logger.info('* * * * * * * * * * * * * * * * * * * * \n')
+
+    if not os.path.isdir(bright_brick_road.stills_base_path):
+        logger.error('not connected to P Drive')
+        sys.exit('not connected to P Drive')
 
     brightcove = Brightcove()
     spreadsheets = Spreadsheet()
