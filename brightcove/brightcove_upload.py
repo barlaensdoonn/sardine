@@ -4,6 +4,7 @@
 # updated 4/5/17
 
 import os
+import sys
 import json
 import shutil
 import requests
@@ -370,7 +371,7 @@ class Spreadsheet(object):
 
         else:
             logger.error('unable to authenticate with gspread')
-            return None
+            sys.exit('exiting the script')
 
         return gspread.authorize(credentials)
 
