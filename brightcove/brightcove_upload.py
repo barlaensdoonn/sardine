@@ -473,7 +473,6 @@ if __name__ == '__main__':
 
             # skip this common OSX hidden file
             if filename != '.DS_Store':
-                logger.info(' - - - - - - - - - - - - - - - - - - - ')
                 filepath = os.path.join(dirpath, filename)
                 video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
 
