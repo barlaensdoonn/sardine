@@ -37,7 +37,7 @@ class Video(object):
         self.filename = filepath.split('/')[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
-        self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
+        self.sheet_name = self.vid_name.replace('_', ' ')
         self.country = self.name[-2:].lower()
         self.source_id = None
         self.reference_id = '14944-BR'
