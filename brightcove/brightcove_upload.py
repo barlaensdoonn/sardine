@@ -27,14 +27,14 @@ class Video(object):
 
     stills_path = bright_brick_road.stills_base_path
 
-    def __init__(self, filename, music_list, source_id_dict):
+    def __init__(self, filepath, music_list, source_id_dict):
         '''
         self.paths['uploaded'] acts as a flag:
         if the video was uploaded successfully, the path is made in brightcove.upload(),
         and will evaluate to True in video.move(); if upload was unsuccessful,
         it stays as None and evaluates to False, and video is not moved
         '''
-        self.filename = filename
+        self.filename = filepath.split('/')[-1]
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
         self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
@@ -48,7 +48,7 @@ class Video(object):
         self.json = None
 
         self.paths = {
-            'video': os.path.abspath(filename),
+            'video': filepath,
             'poster': None,
             'thumbnail': None,
             'uploaded': None
@@ -432,7 +432,8 @@ if __name__ == '__main__':
 
             # skip this common OSX hidden file
             if filename != '.DS_Store':
-                video = Video(filename, spreadsheets.music_dict, spreadsheets.source_dict)
+                filepath = os.path.join(dirpath, filename)
+                video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
 
                 # search for a video on brightcove with same reference id
                 search = brightcove.search_for_video(video.reference_id)
