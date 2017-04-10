@@ -71,6 +71,7 @@ class Video(object):
 
         self._get_music_info(music_list)
         self._get_source_ids(source_id_dict)
+        self._get_stills_paths()
 
     def _get_music_info(self, music_dict):
         '''
@@ -110,7 +111,7 @@ class Video(object):
         self.paths['thumbnail'] = still_path
         logger.info('found {}'.format(still))
 
-    def get_stills_paths(self):
+    def _get_stills_paths(self):
         '''
         utility function to find stills to use for DI API poster and thumbnail images
         '''
@@ -441,22 +442,15 @@ if __name__ == '__main__':
                     brightcove.create_video(video)
                     brightcove.move_to_folder(video)
 
-                    # since it's a new video, find stills to upload
-                    video.get_stills_paths()
-
-                    # get upload urls for video file (and stills if they exist), then upload
-                    for key in video.paths.keys():
-                        if video.paths[key]:
-                            brightcove.get_upload_urls(video, key)
-                            brightcove.upload(video, key)
-
                 elif search:
                     # else if video found, let us know we'll be replacing it
                     logger.info('replacing source file with {}...'.format(video.filename))
 
-                    # only upload video file, not stills
-                    brightcove.get_upload_urls(video, 'video')
-                    brightcove.upload(video, 'video')
+                # get upload urls for video file (and stills if they exist), then upload
+                for key in video.paths.keys():
+                    if video.paths[key]:
+                        brightcove.get_upload_urls(video, key)
+                        brightcove.upload(video, key)
 
                 # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
                 brightcove.di_request(video)
