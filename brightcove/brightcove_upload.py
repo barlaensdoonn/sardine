@@ -40,7 +40,7 @@ class Video(object):
         self.sheet_name = self.vid_name.replace('_', ' ')
         self.country = self.name[-2:].lower()
         self.source_id = None
-        self.reference_id = '14944-BR'
+        self.reference_id = None
         self.state = 'INACTIVE'
         self.music_track = None
         self.music_track_author = None
@@ -56,7 +56,7 @@ class Video(object):
 
         self.urls = {
             'music_track': None,
-            'recipe': 'http://allrecipes.co.uk/recipe/42304/plank-smoked-salmon.aspx',
+            'recipe': None,
             'upload': {
                 'video': None,
                 'poster': None,
@@ -145,8 +145,8 @@ class Video(object):
 
             for wrksht in wrkshts:
                 if wrksht.title == self.country.upper():
-                    self.recipe_url = wrksht.acell('B3').value
-                    self.ref_id = wrksht.acell('B4').value
+                    recipe_url = wrksht.acell('B3').value
+                    ref_id = wrksht.acell('B4').value
 
             if not recipe_url and not ref_id:
                 logger.warning('did not find recipe url or reference id for {}'.format(self.sheet_name))
@@ -156,6 +156,9 @@ class Video(object):
                 logger.warning('did not find reference id for {}'.format(self.sheet_name))
             elif recipe_url and ref_id:
                 logger.info('found recipe url and reference id for {}'.format(self.sheet_name))
+
+            self.urls['recipe'] = recipe_url
+            self.reference_id = ref_id
 
     def move(self):
         if self.paths['uploaded']:
@@ -167,7 +170,6 @@ class Brightcove(object):
     '''methods for interacting with Brightcove CMS and DI APIs'''
 
     def __init__(self):
-        logger.info('* * * * * * * * * * * * * * * * * * * *')
         logger.info('initializing brightcove class...')
         self.pub_id = bright_brick_road.pub_id
         self.folders = self._get_folders()
@@ -219,19 +221,23 @@ class Brightcove(object):
         '''
         CMS API call to search for existing video by reference id
         '''
-        logger.info('searching for reference_id {} on brightcove...'.format(ref_id))
+        if ref_id:
+            logger.info('searching for reference_id {} on brightcove...'.format(ref_id))
 
-        url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/ref:{refid}".format(pubid=self.pub_id, refid=ref_id)
-        r = requests.get(url, headers=self._get_authorization_headers())
+            url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/ref:{refid}".format(pubid=self.pub_id, refid=ref_id)
+            r = requests.get(url, headers=self._get_authorization_headers())
 
-        if r.status_code == 200:
-            found_vid = r.json()
-            logger.info('reference id {} exists as "{}"'.format(ref_id, found_vid['name']))
-            video.id = found_vid['id']
-            video.json = found_vid
-            return found_vid
+            if r.status_code == 200:
+                found_vid = r.json()
+                logger.info('reference id {} exists as "{}"'.format(ref_id, found_vid['name']))
+                video.id = found_vid['id']
+                video.json = found_vid
+                return found_vid
+            else:
+                logger.info('video with reference_id {} does not exist'.format(ref_id))
+                return None
+
         else:
-            logger.info('video with reference_id {} does not exist'.format(ref_id))
             return None
 
     def create_video(self, video):
@@ -264,9 +270,9 @@ class Brightcove(object):
             vid_deets = r.json()
             video.json = vid_deets
             video.id = vid_deets['id']
-            logger.info('created video object "{}" on brightcove'.format(video.name))
+            logger.info('created video object {} on brightcove'.format(video.name))
         else:
-            logger.error('unable to create video object "{}"'.format(video.name))
+            logger.error('unable to create video object {}'.format(video.name))
 
     def move_to_folder(self, video):
         '''
@@ -446,14 +452,14 @@ class Spreadsheet(object):
             logger.info('found spreadsheet titled {}'.format(title))
             return sht
         except gspread.SpreadsheetNotFound:
-            logger.warning('did not find localization spreadsheet titled {}'.format(title))
+            logger.warning('did not find spreadsheet titled {}'.format(title))
             return None
 
 
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
     logger = logging.getLogger('log')
-    logger.info('* * * * * * * * * * * * * * * * * * * * \n')
+    logger.info('* * * * * * * * * * * * * * * * * * * *')
 
     if not os.path.isdir(bright_brick_road.stills_base_path):
         logger.error('not connected to P Drive')
@@ -467,6 +473,7 @@ if __name__ == '__main__':
 
             # skip this common OSX hidden file
             if filename != '.DS_Store':
+                logger.info(' - - - - - - - - - - - - - - - - - - - ')
                 filepath = os.path.join(dirpath, filename)
                 video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
 
@@ -495,4 +502,6 @@ if __name__ == '__main__':
                 # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
                 brightcove.di_request(video)
                 video.move()
-                logger.info(' - - - - - - - - - - - - - ')
+                logger.info(' - - - - - - - - - - - - - - - - - - - ')
+
+    logger.info('* * * * * * * * * * * * * * * * * * * *\n')
