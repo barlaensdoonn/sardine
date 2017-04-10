@@ -133,6 +133,30 @@ class Video(object):
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
 
+    def extract_url_and_ref_id(self, sheet):
+        '''
+        if spreadsheet exists from Spreadsheet.get_spreadsheet(),
+        try to extract recipe url and ref id, and log results
+        '''
+        if sheet:
+            recipe_url = None
+            ref_id = None
+            wrkshts = sheet.worksheets()
+
+            for wrksht in wrkshts:
+                if wrksht.title == self.country.upper():
+                    self.recipe_url = wrksht.acell('B3').value
+                    self.ref_id = wrksht.acell('B4').value
+
+            if not recipe_url and not ref_id:
+                logger.warning('did not find recipe url or reference id for {}'.format(self.sheet_name))
+            elif not recipe_url and ref_id:
+                logger.warning('did not find recipe url for {}'.format(self.sheet_name))
+            elif recipe_url and not ref_id:
+                logger.warning('did not find reference id for {}'.format(self.sheet_name))
+            elif recipe_url and ref_id:
+                logger.info('found recipe url and reference id for {}'.format(self.sheet_name))
+
     def move(self):
         if self.paths['uploaded']:
             shutil.move(self.paths['video'], self.paths['uploaded'])
@@ -413,6 +437,18 @@ class Spreadsheet(object):
 
         return {records_list[i][j]['VIDEO']: records_list[i][j]['SOURCE ID'] for i in range(len(records_list)) for j in range(len(records_list[i]))}
 
+    def get_spreadsheet(self, title):
+        '''
+        try to find spreadsheet for video
+        '''
+        try:
+            sht = self.gc.open(title)
+            logger.info('found spreadsheet titled {}'.format(title))
+            return sht
+        except gspread.SpreadsheetNotFound:
+            logger.warning('did not find localization spreadsheet titled {}'.format(title))
+            return None
+
 
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
@@ -433,6 +469,10 @@ if __name__ == '__main__':
             if filename != '.DS_Store':
                 filepath = os.path.join(dirpath, filename)
                 video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
+
+                # look for video's spreadsheet to get recipe url and reference id
+                sheet = spreadsheets.get_spreadsheet(video.sheet_name)
+                video.extract_url_and_ref_id(sheet)
 
                 # search for a video on brightcove with same reference id
                 search = brightcove.search_for_video(video.reference_id)
