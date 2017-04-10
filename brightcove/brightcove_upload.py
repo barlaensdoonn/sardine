@@ -186,6 +186,7 @@ class Brightcove(object):
             logger.error('unable to get folder list')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            sys.exit('exiting script')
 
     def search_for_video(self, ref_id):
         '''
