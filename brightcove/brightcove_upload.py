@@ -448,7 +448,7 @@ if __name__ == '__main__':
 
                 # get upload urls for video file (and stills if they exist), then upload
                 for key in video.paths.keys():
-                    if video.paths[key]:
+                    if video.paths[key] and key != 'uploaded':
                         brightcove.get_upload_urls(video, key)
                         brightcove.upload(video, key)
 
