@@ -354,11 +354,22 @@ class Spreadsheet(object):
 
     def _authenticate(self):
         '''
-        authenticate with Google drive
+        authenticate with Google drive.
+        first check for credentials in the office, then at home;
+        return None if neither found
         '''
         logger.info('authenticating to Google Sheets...')
         scope = ['https://spreadsheets.google.com/feeds']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
+
+        if os.path.isfile(bright_brick_road.spread_cred):
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
+
+        elif os.path.isfile(bright_brick_road.spread_cred_home):
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred_home, scope)
+            logger.info('working from home today i see')
+        else:
+            logger.error('unable to authenticate with gspread')
+            return None
 
         return gspread.authorize(credentials)
 
