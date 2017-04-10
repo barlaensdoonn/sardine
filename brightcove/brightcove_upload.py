@@ -367,6 +367,7 @@ class Spreadsheet(object):
         elif os.path.isfile(bright_brick_road.spread_cred_home):
             credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred_home, scope)
             logger.info('working from home today i see')
+
         else:
             logger.error('unable to authenticate with gspread')
             return None
