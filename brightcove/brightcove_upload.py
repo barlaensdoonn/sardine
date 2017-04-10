@@ -47,9 +47,6 @@ class Video(object):
         self.id = None
         self.json = None
 
-        self._get_music_info(music_list)
-        self._get_source_ids(source_id_dict)
-
         self.paths = {
             'video': os.path.abspath(filename),
             'poster': None,
@@ -71,6 +68,9 @@ class Video(object):
                 'thumbnail': None
             }
         }
+
+        self._get_music_info(music_list)
+        self._get_source_ids(source_id_dict)
 
     def _get_music_info(self, music_dict):
         '''
