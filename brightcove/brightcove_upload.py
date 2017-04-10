@@ -40,7 +40,7 @@ class Video(object):
         self.vid_name_compare = self.vid_name.replace('_', ' ').lower()
         self.country = self.name[-2:].lower()
         self.source_id = None
-        self.reference_id = None
+        self.reference_id = '14944-BR'
         self.state = 'INACTIVE'
         self.music_track = None
         self.music_track_author = None
@@ -123,12 +123,12 @@ class Video(object):
                 if 'hd' in split.lower():
                     if split.lower().startswith(self.vid_name.lower()):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
-                        break
+                        return
 
                 elif 'raw' in split.lower():
                     if split.lower().startswith(self.vid_name.lower()):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
-                        break
+                        return
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
 
@@ -461,4 +461,4 @@ if __name__ == '__main__':
                 # call Dynamic Ingest API to ingest video, with stills as poster and thumbnail if applicable
                 brightcove.di_request(video)
                 video.move()
-                logger.info(' ')
+                logger.info(' - - - - - - - - - - - - - ')
