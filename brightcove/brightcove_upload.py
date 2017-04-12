@@ -78,6 +78,7 @@ class Video(object):
         find music track, author, and source url from list of spreadsheet records
         '''
         vid_name = self.vid_name.replace('_', ' ').lower()
+        vid_name = self.vid_name.replace('-', ' ').lower()
 
         for key in music_dict.keys():
             if key.lower().strip() == vid_name:
@@ -94,6 +95,7 @@ class Video(object):
         find source ids from list of spreadsheet records
         '''
         vid_name = self.vid_name.replace('_', ' ').lower()
+        vid_name = self.vid_name.replace('-', ' ').lower()
 
         for key in source_id_dict.keys():
             if key.lower().strip() == vid_name:
