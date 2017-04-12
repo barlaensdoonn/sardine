@@ -149,13 +149,13 @@ class Video(object):
                     ref_id = wrksht.acell('B4').value
 
             if not recipe_url and not ref_id:
-                logger.warning('did not find recipe url or reference id for {}'.format(self.sheet_name))
+                logger.warning('did not find recipe url or reference id for {}'.format(self.name))
             elif not recipe_url and ref_id:
-                logger.warning('did not find recipe url for {}'.format(self.sheet_name))
+                logger.warning('did not find recipe url for {}'.format(self.name))
             elif recipe_url and not ref_id:
-                logger.warning('did not find reference id for {}'.format(self.sheet_name))
+                logger.warning('did not find reference id for {}'.format(self.name))
             elif recipe_url and ref_id:
-                logger.info('found recipe url and reference id for {}'.format(self.sheet_name))
+                logger.info('found recipe url and reference id for {}'.format(self.name))
 
             self.urls['recipe'] = recipe_url
             self.reference_id = ref_id
