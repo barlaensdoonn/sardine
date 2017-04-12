@@ -89,7 +89,7 @@ class Copier(object):
         self.dropbox_paths = {country: os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}'.format(country)) for country in self.countries}
 
         self.stills_paths = {
-            '250': '/Volumes/public/International/Editorial/Video/Recipe Images/250x250',
+            'square': '/Volumes/public/International/Editorial/Video/Recipe Images/SQUARE',
             'hd': '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720',
             'raw': '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images',
         }
@@ -130,9 +130,13 @@ class Copier(object):
         stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
 
         for pic in os.scandir(stills_base_path):
+            filename = os.path.splitext(pic.name)[0].lower()
             for key in self.stills_paths.keys():
-                if os.path.splitext(pic.name)[0].lower().endswith(key):
+                if filename.endswith(key):
                     still_dst = os.path.join(copier.stills_paths[key], pic.name)
+
+                elif filename.endswith('250') or filename.endswith('960'):
+                    still_dst = os.path.join(copier.stills_paths['SQUARE'], pic.name)
 
                     if not os.path.isfile(still_dst):
                         print('copying {}'.format(pic.name))
