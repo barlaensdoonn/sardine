@@ -136,7 +136,7 @@ class Copier(object):
                     still_dst = os.path.join(copier.stills_paths[key], pic.name)
 
                 elif filename.endswith('250') or filename.endswith('960'):
-                    still_dst = os.path.join(copier.stills_paths['SQUARE'], pic.name)
+                    still_dst = os.path.join(copier.stills_paths['square'], pic.name)
 
                     if not os.path.isfile(still_dst):
                         print('copying {}'.format(pic.name))
