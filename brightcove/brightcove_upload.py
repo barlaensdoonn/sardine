@@ -80,7 +80,10 @@ class Video(object):
         vid_name = self.vid_name.replace('_', ' ').lower()
 
         for key in music_dict.keys():
-            if key.lower().strip() == vid_name:
+            # handle dashes in video titles
+            title = key.replace('-', ' ')
+
+            if title.lower().strip() == vid_name:
                 self.music_track = music_dict[key]['music_track']
                 self.music_track_author = music_dict[key]['music_track_author']
                 self.urls['music_track'] = music_dict[key]['source_url']
@@ -96,7 +99,10 @@ class Video(object):
         vid_name = self.vid_name.replace('_', ' ').lower()
 
         for key in source_id_dict.keys():
-            if key.lower().strip() == vid_name:
+            # handle dashes in video titles
+            title = key.replace('-', ' ')
+
+            if title.lower().strip() == vid_name:
                 self.source_id = source_id_dict[key]
                 logger.info('found source ID for {}'.format(self.name))
                 break
