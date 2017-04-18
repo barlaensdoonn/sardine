@@ -27,14 +27,14 @@ class Video(object):
 
     stills_path = bright_brick_road.stills_base_path
 
-    def __init__(self, filepath, music_list, source_id_dict):
+    def __init__(self, direntry, music_list, source_id_dict):
         '''
         self.paths['uploaded'] acts as a flag:
         if the video was uploaded successfully, the path is made in brightcove.upload(),
         and will evaluate to True in video.move(); if upload was unsuccessful,
         it stays as None and evaluates to False, and video is not moved
         '''
-        self.filename = filepath.split('/')[-1]
+        self.filename = direntry.name
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
         self.sheet_name = self.vid_name.replace('_', ' ')
@@ -48,7 +48,7 @@ class Video(object):
         self.json = None
 
         self.paths = {
-            'video': filepath,
+            'video': direntry.path,
             'poster': None,
             'thumbnail': None,
             'uploaded': None
@@ -474,13 +474,11 @@ if __name__ == '__main__':
     brightcove = Brightcove()
     spreadsheets = Spreadsheet()
 
-    for dirpath, dirnames, filenames in os.walk(search_path):
-        for filename in filenames:
+    for direntry in os.scandir(search_path):
 
             # skip this common OSX hidden file
-            if filename != '.DS_Store':
-                filepath = os.path.join(dirpath, filename)
-                video = Video(filepath, spreadsheets.music_dict, spreadsheets.source_dict)
+            if direntry.name != '.DS_Store':
+                video = Video(direntry, spreadsheets.music_dict, spreadsheets.source_dict)
 
                 # look for video's spreadsheet to get recipe url and reference id
                 sheet = spreadsheets.get_spreadsheet(video.sheet_name)
