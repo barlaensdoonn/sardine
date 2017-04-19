@@ -207,7 +207,7 @@ class Brightcove(object):
         '''
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
-            'name': video.name,
+            'name': video.title,
             'long_description': video.description,
             'reference_id': video.reference_id,
             'state': video.state,
