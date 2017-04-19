@@ -234,7 +234,7 @@ class Brightcove(object):
             vid_deets = r.json()
             video.json = vid_deets
             video.id = vid_deets['id']
-            logger.info('created video object {} on brightcove'.format(video.name))
+            logger.info('created video object {} on brightcove'.format(video.title))
         else:
             logger.error('unable to create video object {}'.format(video.name))
 
