@@ -218,7 +218,7 @@ class Brightcove(object):
                 'musictrackauthor': video.music_track_author,
                 'musictrackurl': video.urls['music_track'],
                 'filename': video.filename,
-                'publisheddate': video.published_date,
+                'publisheddate': video.pub_date,
                 'ytvideourl': video.urls['youtube']
             },
             'link': {
