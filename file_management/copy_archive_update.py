@@ -31,6 +31,9 @@ class Spreadsheet(object):
         for y in ['-', ' ']:
             name = name.replace(y, '_')
 
+        for z in ["'"]:
+            name = name.replace(z, '')
+
         return name
 
     def _get_sheet_names(self, spreadsheet):
