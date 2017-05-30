@@ -25,14 +25,11 @@ class Spreadsheet(object):
     def _replace_chars(self, string):
         name = string
 
-        for x in [',', ':']:
+        for x in [',', ':', "'", '?', '(', ')']:
             name = name.replace(x, '')
 
         for y in ['-', ' ']:
             name = name.replace(y, '_')
-
-        for z in ["'"]:
-            name = name.replace(z, '')
 
         return name
 
