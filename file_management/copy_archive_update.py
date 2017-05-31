@@ -183,17 +183,39 @@ class Copier(object):
 
     def make_vid_dict(self):
         '''
-        makes a dict as {'file': ('vid_name', 'COUNTRY', 'src_file')}
+        makes a dict as {'file': ('vid_name', 'COUNTRY', social, 'src_file')}
         where file is complete file name, such as 'Hot_cross_buns_UK.webm'
         vid name is name of the video (which should be its directory too), such as 'Hot_cross_buns'
         COUNTRY is 2 letter country for that file, such as 'UK'
+        social is a boolean flag for social videos
         src_file is full path to source file to use for copying
 
         if more than one video from same directory in filenames, add the number
         of duplicates to self.duplicates dict as {'vid_name': # of times duplicated}
         '''
-        vid_names = [file[:(len(file) - 8)] for file in self.filenames]
-        vid_countries = [file[(len(file) - 7):(len(file) - 5)] for file in self.filenames]
+        vid_names = []
+        vid_countries = []
+        socials = []
+
+        for vid in self.filenames:
+            strip = os.path.splitext(vid)
+            split = strip[0].split('_')
+
+            country = split[-1]
+
+            if split[-2].lower() == 'social':
+                social = True
+                vid_name = '_'.join(split[:-2])
+            else:
+                social = False
+                vid_name = '_'.join(split[:-1])
+
+            vid_names.append(vid_name)
+            vid_countries.append(country)
+            socials.append(social)
+
+        # vid_names = [file[:(len(file) - 8)] for file in self.filenames]
+        # vid_countries = [file[(len(file) - 7):(len(file) - 5)] for file in self.filenames]
         vid_split = list(zip(vid_names, vid_countries, self.src_files))
 
         for vid in vid_names:
@@ -326,7 +348,8 @@ if __name__ == '__main__':
         file_name = key
         vid_name = copier.vid_dict[key][0]
         country = copier.vid_dict[key][1]
-        src_file = copier.vid_dict[key][2]
+        social = copier.vid_dict[key][2]
+        src_file = copier.vid_dict[key][3]
         archive_path, backup_src, flag = copier.find_archive_path(vid_name, file_name)
         country_path = copier.find_country_path(country, file_name)
 
@@ -339,7 +362,7 @@ if __name__ == '__main__':
 
         copier.copy(vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        if flag != 'not_found':
+        if flag != 'not_found' and not social:
             try:
                 sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
             except Exception as e:
