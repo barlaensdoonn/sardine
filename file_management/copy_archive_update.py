@@ -271,7 +271,7 @@ class Copier(object):
 
             return dst_file
 
-    def copy(self, vid_name, social, country, file_name, src_file, archive_path, backup_src, flag, country_path):
+    def copy(self, vid_name, country, social, file_name, src_file, archive_path, backup_src, flag, country_path):
 
         if flag[0:4] == 'copy':
             if country == 'UK':
