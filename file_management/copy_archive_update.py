@@ -129,20 +129,22 @@ class Copier(object):
 
         for pic in os.scandir(stills_base_path):
             filename = os.path.splitext(pic.name)[0].lower()
-            for key in self.stills_paths.keys():
-                if filename.endswith(key):
-                    still_dst = os.path.join(copier.stills_paths[key], pic.name)
+            file_end = filename.split('_')[-1]
 
-                elif filename.endswith('250') or filename.endswith('960'):
-                    still_dst = os.path.join(copier.stills_paths['square'], pic.name)
+            if file_end in self.stills_paths.keys():
+                still_dst = os.path.join(copier.stills_paths[key], pic.name)
+            elif file_end == '250' or file_end == '960':
+                still_dst = os.path.join(copier.stills_paths['square'], pic.name)
+            else:
+                still_dst = None
 
-                    if not os.path.isfile(still_dst):
-                        print('copying {}'.format(pic.name))
-                        shutil.copy2(pic.path, still_dst)
-                        self.stats['stills'].append(pic.name)
+            if still_dst and not os.path.isfile(still_dst):
+                print('copying {}'.format(pic.name))
+                shutil.copy2(pic.path, still_dst)
+                self.stats['stills'].append(pic.name)
 
-                    elif os.path.isfile(still_dst):
-                        print('{} already exists'.format(pic.name))
+            elif os.path.isfile(still_dst):
+                print('{} already exists'.format(pic.name))
 
         else:
             print("didn't find any stills to copy")
