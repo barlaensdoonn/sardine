@@ -81,8 +81,6 @@ class Copier(object):
         self.src_dir = windy_paths.copier_src_dir
         self.export_path = 'Exports/localizedVP9'
         self.stills_path = 'Stills'
-        self.no_copy_dir = windy_paths.no_copy_dir
-        self.copied_dir = windy_paths.copied_dir
         self.duplicates = {}
         self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
         self.stats = {flags[i]: [] for i in range(len(flags))}
@@ -261,7 +259,7 @@ class Copier(object):
             print("didn't find {} anywhere".format(file_name))
             flag = "not_found"
             backup_src = None
-            dst_file = os.path.join(self.no_copy_dir, file_name)
+            dst_file = os.path.join(windy_paths.no_copy_dir, file_name)
 
             return dst_file, backup_src, flag
 
@@ -271,7 +269,7 @@ class Copier(object):
 
             return dst_file
 
-    def copy(self, vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path):
+    def copy(self, vid_name, social, country, file_name, src_file, archive_path, backup_src, flag, country_path):
 
         if flag[0:4] == 'copy':
             if country == 'UK':
@@ -291,12 +289,16 @@ class Copier(object):
 
             self._copy_dropbox(country, file_name, src_file)
 
-            print("moving {} to brightcove folder\n".format(file_name))
-            shutil.move(src_file, os.path.join(self.copied_dir, file_name))
+            if social:
+                print("moving {} to uploaded folder\n".format(file_name))
+                shutil.move(src_file, os.path.join(windy_paths.uploaded_dir, file_name))
+            else:
+                print("moving {} to brightcove folder\n".format(file_name))
+                shutil.move(src_file, os.path.join(windy_paths.brightcove_dir, file_name))
 
         else:
             print("moving {} to no_copy folder\n".format(file_name))
-            shutil.move(src_file, archive_path)
+            shutil.move(src_file, windy_paths.no_copy_dir)
 
         if backup_src:
             backup_dst = os.path.join(self.zip_paths[flag], backup_src.split("/")[-1])
@@ -360,7 +362,7 @@ if __name__ == '__main__':
                 backup_src = None
                 copier.duplicates[vid_name] -= 1
 
-        copier.copy(vid_name, country, file_name, src_file, archive_path, backup_src, flag, country_path)
+        copier.copy(vid_name, country, social, file_name, src_file, archive_path, backup_src, flag, country_path)
 
         if flag != 'not_found' and not social:
             try:
