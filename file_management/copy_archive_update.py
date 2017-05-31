@@ -216,7 +216,7 @@ class Copier(object):
 
         # vid_names = [file[:(len(file) - 8)] for file in self.filenames]
         # vid_countries = [file[(len(file) - 7):(len(file) - 5)] for file in self.filenames]
-        vid_split = list(zip(vid_names, vid_countries, self.src_files))
+        vid_split = list(zip(vid_names, vid_countries, socials, self.src_files))
 
         for vid in vid_names:
             if vid_names.count(vid) > 1 and vid not in self.duplicates:
