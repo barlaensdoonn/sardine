@@ -146,9 +146,6 @@ class Copier(object):
             elif still_dst and os.path.isfile(still_dst):
                 print('{} already exists'.format(pic.name))
 
-        else:
-            print("didn't find any stills to copy")
-
         print('\n')
 
     def _copy_dropbox(self, country, file_name, src_file):
