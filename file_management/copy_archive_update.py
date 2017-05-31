@@ -143,7 +143,7 @@ class Copier(object):
                 shutil.copy2(pic.path, still_dst)
                 self.stats['stills'].append(pic.name)
 
-            elif os.path.isfile(still_dst):
+            elif still_dst and os.path.isfile(still_dst):
                 print('{} already exists'.format(pic.name))
 
         else:
