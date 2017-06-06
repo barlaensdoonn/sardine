@@ -1,18 +1,18 @@
 #!/usr/local/bin/python3
-# brightcove playground
-# 3/30/17
-# updated 4/5/17
+# brightcove from spreadsheet
+# 4/18/17
+# updated 4/26/17
+
 
 import os
 import sys
 import json
 import shutil
+import pandas
 import requests
-import gspread
 import logging
 import logging.config
 import bright_brick_road
-from oauth2client.service_account import ServiceAccountCredentials
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -20,6 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
+csv_path = '/Volumes/Video_Localized/brightcove_errors.csv'
 
 
 class Video(object):
@@ -27,7 +28,7 @@ class Video(object):
 
     stills_path = bright_brick_road.stills_base_path
 
-    def __init__(self, direntry, music_list, source_id_dict):
+    def __init__(self, direntry, sprdsht):
         '''
         self.paths['uploaded'] acts as a flag:
         if the video was uploaded successfully, the path is made in brightcove.upload(),
@@ -39,11 +40,7 @@ class Video(object):
         self.vid_name = self.name[0:-3]
         self.sheet_name = self.vid_name.replace('_', ' ')
         self.country = self.name[-2:].lower()
-        self.source_id = None
-        self.reference_id = None
-        self.state = 'INACTIVE'
-        self.music_track = None
-        self.music_track_author = None
+        self.state = 'ACTIVE'
         self.id = None
         self.json = None
 
@@ -56,6 +53,7 @@ class Video(object):
 
         self.urls = {
             'music_track': None,
+            'youtube': None,
             'recipe': None,
             'upload': {
                 'video': None,
@@ -69,45 +67,27 @@ class Video(object):
             }
         }
 
-        self._get_music_info(music_list)
-        self._get_source_ids(source_id_dict)
+        self._get_info(sprdsht)
         self._get_stills_paths()
 
-    def _get_music_info(self, music_dict):
-        '''
-        find music track, author, and source url from list of spreadsheet records
-        '''
-        vid_name = self.vid_name.replace('_', ' ').lower()
+    def _get_info(self, sprdsht):
+        info = sprdsht.loc[self.sheet_name]
 
-        for key in music_dict.keys():
-            # handle dashes in video titles
-            title = key.replace('-', ' ')
+        self.title = info['Title']
+        self.description = info['Description']
+        self.reference_id = info['Recipe ID - Recipe Country']
+        self.source_id = info['SourceID - Country']
+        self.music_track = info['Music track']
+        self.music_track_author = info['Music Author']
 
-            if title.lower().strip() == vid_name:
-                self.music_track = music_dict[key]['music_track']
-                self.music_track_author = music_dict[key]['music_track_author']
-                self.urls['music_track'] = music_dict[key]['source_url']
-                logger.info('found music info for {}'.format(self.name))
-                break
-        else:
-            logger.warning('did not find music info for {}'.format(self.vid_name))
+        self.urls['youtube'] = info['YT Video URL']
+        self.urls['music_track'] = info['Music track URL']
+        self.urls['recipe'] = info['Recipe URL']
 
-    def _get_source_ids(self, source_id_dict):
-        '''
-        find source ids from list of spreadsheet records
-        '''
-        vid_name = self.vid_name.replace('_', ' ').lower()
+        self.tags = info['YT Tags'].split(';')
+        self.tags.append(self.country)
 
-        for key in source_id_dict.keys():
-            # handle dashes in video titles
-            title = key.replace('-', ' ')
-
-            if title.lower().strip() == vid_name:
-                self.source_id = source_id_dict[key]
-                logger.info('found source ID for {}'.format(self.name))
-                break
-        else:
-            logger.warning('did not find source ID for {}'.format(self.vid_name))
+        logger.info('retrieved info for {} from spreadsheet'.format(self.vid_name))
 
     def _set_stills_paths(self, still, still_path):
         '''
@@ -123,6 +103,7 @@ class Video(object):
         '''
         still_path = Video.stills_path
 
+        # look for HD images first
         for dirpath, dirnames, filenames in os.walk(still_path):
             for thing in filenames:
                 split = os.path.splitext(thing)[0]
@@ -132,39 +113,17 @@ class Video(object):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         return
 
-                elif 'raw' in split.lower():
+        # look for RAW images next (these aren't always the correct aspect ratio)
+        for dirpath, dirnames, filenames in os.walk(still_path):
+            for thing in filenames:
+                split = os.path.splitext(thing)[0]
+
+                if 'raw' in split.lower():
                     if split.lower().startswith(self.vid_name.lower()):
                         self._set_stills_paths(thing, os.path.join(dirpath, thing))
                         return
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
-
-    def extract_url_and_ref_id(self, sheet):
-        '''
-        if spreadsheet exists from Spreadsheet.get_spreadsheet(),
-        try to extract recipe url and ref id, and log results
-        '''
-        if sheet:
-            recipe_url = None
-            ref_id = None
-            wrkshts = sheet.worksheets()
-
-            for wrksht in wrkshts:
-                if wrksht.title == self.country.upper():
-                    recipe_url = wrksht.acell('B3').value
-                    ref_id = wrksht.acell('B4').value
-
-            if not recipe_url and not ref_id:
-                logger.warning('did not find recipe url or reference id for {}'.format(self.name))
-            elif not recipe_url and ref_id:
-                logger.warning('did not find recipe url for {}'.format(self.name))
-            elif recipe_url and not ref_id:
-                logger.warning('did not find reference id for {}'.format(self.name))
-            elif recipe_url and ref_id:
-                logger.info('found recipe url and reference id for {}'.format(self.name))
-
-            self.urls['recipe'] = recipe_url
-            self.reference_id = ref_id
 
     def move(self):
         if self.paths['uploaded']:
@@ -252,16 +211,18 @@ class Brightcove(object):
         '''
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
-            'name': video.name,
-            'state': video.state,
+            'name': video.title,
+            'long_description': video.description,
             'reference_id': video.reference_id,
-            'tags': [video.country],
+            'state': video.state,
+            'tags': video.tags,
             'custom_fields': {
                 'sourceid': video.source_id,
                 'musictrack': video.music_track,
                 'musictrackauthor': video.music_track_author,
                 'musictrackurl': video.urls['music_track'],
                 'filename': video.filename,
+                'ytvideourl': video.urls['youtube']
             },
             'link': {
                 'url': video.urls['recipe'],
@@ -276,9 +237,11 @@ class Brightcove(object):
             vid_deets = r.json()
             video.json = vid_deets
             video.id = vid_deets['id']
-            logger.info('created video object {} on brightcove'.format(video.name))
+            logger.info('created video object {} on brightcove'.format(video.title))
         else:
             logger.error('unable to create video object {}'.format(video.name))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
 
     def move_to_folder(self, video):
         '''
@@ -381,87 +344,6 @@ class Brightcove(object):
             logger.error(r.text)
 
 
-class Spreadsheet(object):
-    '''methods for interacting with Google Drive spreadsheets'''
-
-    music_tracks_key = bright_brick_road.music_tracks_key
-    master_list_key = bright_brick_road.master_list_key
-
-    def __init__(self):
-        self.gc = self._authenticate()
-        self.sheets = self._get_sheets()
-        self.music_dict = self._compile_music()
-        self.source_dict = self._compile_sources()
-
-    def _authenticate(self):
-        '''
-        authenticate with Google drive.
-        first check for credentials in the office, then at home;
-        return None if neither found
-        '''
-        logger.info('authenticating to Google Sheets...')
-        scope = ['https://spreadsheets.google.com/feeds']
-
-        if os.path.isfile(bright_brick_road.spread_cred):
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
-
-        elif os.path.isfile(bright_brick_road.spread_cred_home):
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred_home, scope)
-            logger.info('working from home today i see =]')
-
-        else:
-            logger.error('unable to authenticate with gspread')
-            sys.exit('exiting the script')
-
-        return gspread.authorize(credentials)
-
-    def _get_sheets(self):
-        '''
-        get spreadsheet objects from authenticated google drive instance
-        '''
-        logger.info('getting spreadsheets...')
-        music = self.gc.open_by_key(Spreadsheet.music_tracks_key)
-        master = self.gc.open_by_key(Spreadsheet.master_list_key)
-
-        sheet_music = music.worksheet("Music Tracks")
-        master_list_pending = master.worksheet('Localization Pending')
-        master_list_completed = master.worksheet('Localization Completed')
-        master_list_completed_US = master.worksheet('Localization Completed - US Videos')
-
-        sheets = {
-            'music': sheet_music,
-            'pending': master_list_pending,
-            'completed': master_list_completed,
-            'completed_US': master_list_completed_US
-        }
-
-        return sheets
-
-    def _compile_music(self):
-        logger.info('compiling music list...')
-        music_list = self.sheets['music'].get_all_records()
-
-        return {music_list[i]['VIDEO']: {'music_track': music_list[i]['Music Title'], 'music_track_author': music_list[i]['Musician/Composer'], 'source_url': music_list[i]['Link to the Music Website']} for i in range(len(music_list))}
-
-    def _compile_sources(self):
-        logger.info('compiling source_ID list...')
-        records_list = [self.sheets[key].get_all_records() for key in ['pending', 'completed', 'completed_US']]
-
-        return {records_list[i][j]['VIDEO']: records_list[i][j]['SOURCE ID'] for i in range(len(records_list)) for j in range(len(records_list[i]))}
-
-    def get_spreadsheet(self, title):
-        '''
-        try to find spreadsheet for video
-        '''
-        try:
-            sht = self.gc.open(title)
-            logger.info('found spreadsheet titled {}'.format(title))
-            return sht
-        except gspread.SpreadsheetNotFound:
-            logger.warning('did not find spreadsheet titled {}'.format(title))
-            return None
-
-
 if __name__ == '__main__':
     logging.config.fileConfig('log.conf')
     logger = logging.getLogger('log')
@@ -472,17 +354,13 @@ if __name__ == '__main__':
         sys.exit('not connected to P Drive')
 
     brightcove = Brightcove()
-    spreadsheets = Spreadsheet()
+    errors = pandas.read_csv(csv_path, index_col=0)
 
     for direntry in os.scandir(search_path):
 
             # skip this common OSX hidden file
             if direntry.name != '.DS_Store':
-                video = Video(direntry, spreadsheets.music_dict, spreadsheets.source_dict)
-
-                # look for video's spreadsheet to get recipe url and reference id
-                sheet = spreadsheets.get_spreadsheet(video.sheet_name)
-                video.extract_url_and_ref_id(sheet)
+                video = Video(direntry, errors)
 
                 # search for a video on brightcove with same reference id
                 search = brightcove.search_for_video(video.reference_id)
