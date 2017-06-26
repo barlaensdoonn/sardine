@@ -20,7 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = '/Volumes/Video_Localized/brightcove_errors.csv'
+csv_path = '/Volumes/Video_Localized/logs/missing_vids_PL.csv'
 
 
 class Video(object):
@@ -38,7 +38,7 @@ class Video(object):
         self.filename = direntry.name
         self.name = os.path.splitext(self.filename)[0]
         self.vid_name = self.name[0:-3]
-        self.sheet_name = self.vid_name.replace('_', ' ')
+        self.sheet_name = self.vid_name.replace('_', ' ').lower()
         self.country = self.name[-2:].lower()
         self.state = 'ACTIVE'
         self.id = None
@@ -73,18 +73,18 @@ class Video(object):
     def _get_info(self, sprdsht):
         info = sprdsht.loc[self.sheet_name]
 
-        self.title = info['Title']
+        self.title = info['Localized title']
         self.description = info['Description']
-        self.reference_id = info['Recipe ID - Recipe Country']
-        self.source_id = info['SourceID - Country']
+        self.reference_id = info['RecipeID-Country']
+        self.source_id = info['SourceID-Country']
         self.music_track = info['Music track']
-        self.music_track_author = info['Music Author']
+        self.music_track_author = info['Music author']
 
-        self.urls['youtube'] = info['YT Video URL']
+        self.urls['youtube'] = info['YT URL']
         self.urls['music_track'] = info['Music track URL']
         self.urls['recipe'] = info['Recipe URL']
 
-        self.tags = info['YT Tags'].split(';')
+        self.tags = info['YT Tags'].split(', ')
         self.tags.append(self.country)
 
         logger.info('retrieved info for {} from spreadsheet'.format(self.vid_name))
@@ -212,7 +212,7 @@ class Brightcove(object):
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
             'name': video.title,
-            'long_description': video.description,
+            'description': video.description,
             'reference_id': video.reference_id,
             'state': video.state,
             'tags': video.tags,
@@ -354,13 +354,16 @@ if __name__ == '__main__':
         sys.exit('not connected to P Drive')
 
     brightcove = Brightcove()
-    errors = pandas.read_csv(csv_path, index_col=0)
+
+    # make dataframe from spreadsheet columns using lowercase video names as index
+    vids = pandas.read_csv(csv_path, index_col=0)
+    vids.index = vids.index.str.lower()
 
     for direntry in os.scandir(search_path):
 
             # skip this common OSX hidden file
             if direntry.name != '.DS_Store':
-                video = Video(direntry, errors)
+                video = Video(direntry, vids)
 
                 # search for a video on brightcove with same reference id
                 search = brightcove.search_for_video(video.reference_id)
