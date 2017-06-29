@@ -133,7 +133,7 @@ class Copier(object):
 
             if file_end in self.stills_paths.keys():
                 still_dst = os.path.join(self.stills_paths[file_end], pic.name)
-            elif file_end == '250' or file_end == '960':
+            elif file_end == '250' or file_end == '960' or file_end == 'SQUARE':
                 still_dst = os.path.join(self.stills_paths['square'], pic.name)
             else:
                 still_dst = None
