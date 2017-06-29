@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # brightcove from spreadsheet
 # 4/18/17
-# updated 4/26/17
+# updated 6/28/17
 
 
 import os
@@ -20,7 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = '/Volumes/Video_Localized/logs/missing_vids_PL.csv'
+csv_path = '/Volumes/Video_Localized/logs/missing_vids_FR.csv'
 
 
 class Video(object):
