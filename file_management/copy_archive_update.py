@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
-# updated: 4/7/17
+# updated: 6/28/17
 
 import gspread
 import os
@@ -363,7 +363,7 @@ if __name__ == '__main__':
 
         copier.copy(vid_name, country, social, file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        if flag != 'not_found' and not social:
+        if flag not in ['copy_zip', 'copy_zip_US', 'not_found'] and not social:
             try:
                 sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
             except Exception as e:
