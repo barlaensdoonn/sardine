@@ -5,7 +5,9 @@
 
 import sys
 import requests
+import pickle
 import bright_brick_road
+from datetime import datetime
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -51,6 +53,16 @@ def get_folders():
         sys.exit("couldn't get folder list, exiting script")
 
 
+def get_now():
+    now = datetime.now()
+    return now.strftime('%m_%d_%y')
+
+
+def pickle_data(data, now_str):
+    with open('BC_vids_by_folder_{}.p'.format(now_str), 'wb') as pickl:
+        pickle.dump(vid_dict, pickl, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 if __name__ == '__main__':
     pub_id = bright_brick_road.pub_id
     folder_dict = get_folders()
@@ -78,4 +90,4 @@ if __name__ == '__main__':
                 print('got video titles for {}\n'.format(key))
                 videos = False
 
-    
+    pickle_data(vid_dict, get_now())
