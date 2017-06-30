@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # brightcove: get videos in folders
 # 6/6/17
-# updated 6/6/17
+# updated 6/29/17
 
 import sys
 import requests
