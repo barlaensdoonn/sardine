@@ -25,7 +25,7 @@ from oauth2client.tools import argparser, run_flow
 # list used to loop through the client_secrets_files to authenticate and get analytics report
 countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
 
-client_secrets_files = secret.client_secret_files
+client_secrets_files = secret.client_secrets_files
 
 # These OAuth 2.0 access scopes allow for read-only access to the authenticated
 # user's account for both YouTube Data API resources and YouTube Analytics Data.
