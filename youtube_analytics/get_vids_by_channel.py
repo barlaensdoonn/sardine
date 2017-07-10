@@ -41,7 +41,7 @@ def get_now():
 
 
 def pickle_data(data, now_str):
-    with open('YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
+    with open('misc/YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
         pickle.dump(vid_dict, pickl, protocol=pickle.HIGHEST_PROTOCOL)
 
 
