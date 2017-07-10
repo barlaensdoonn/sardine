@@ -2,8 +2,9 @@
 # get videos by youtube channel
 # 6/6/17
 
-import httplib2
+import secret
 import pickle
+import httplib2
 from datetime import datetime, timedelta
 
 from apiclient.discovery import build
@@ -24,20 +25,7 @@ from oauth2client.tools import argparser, run_flow
 # list used to loop through the client_secrets_files to authenticate and get analytics report
 countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
 
-client_secrets_files = {
-    "AU": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_AU.json",
-    "AR": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_AU.json",
-    "BR": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_BR.json",
-    "DE": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_DE.json",
-    "FR": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_FR.json",
-    "IT": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_IT.json",
-    "MX": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_MX.json",
-    "NL": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_NL.json",
-    "PL": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_PL.json",
-    "QC": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_QC.json",
-    "RU": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_RU.json",
-    "UK": "/Users/kestrel/gitBucket/credentials/client_ids/client_id_UK.json"
-}
+client_secrets_files = secret.client_secret_files
 
 # These OAuth 2.0 access scopes allow for read-only access to the authenticated
 # user's account for both YouTube Data API resources and YouTube Analytics Data.
@@ -55,7 +43,6 @@ def get_now():
 def pickle_data(data, now_str):
     with open('YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
         pickle.dump(vid_dict, pickl, protocol=pickle.HIGHEST_PROTOCOL)
-
 
 
 class AuthenticatedQueries(object):
