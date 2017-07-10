@@ -59,7 +59,7 @@ def get_now():
 
 
 def pickle_data(data, now_str):
-    with open('BC_vids_by_folder_{}.p'.format(now_str), 'wb') as pickl:
+    with open('ignore/BC_vids_by_folder_{}.p'.format(now_str), 'wb') as pickl:
         pickle.dump(vid_dict, pickl, protocol=pickle.HIGHEST_PROTOCOL)
 
 
