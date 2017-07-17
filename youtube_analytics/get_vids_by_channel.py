@@ -121,6 +121,7 @@ def main():
     vid_dict = {country: [] for country in countries}
 
     for country in countries:
+        print('getting YT videos titles for {}'.format(country))
         authenticated_queries.get_authenticated_services(country)
 
         # taken from https://github.com/youtube/api-samples/blob/master/python/my_uploads.py
