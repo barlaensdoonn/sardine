@@ -20,7 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = '/Volumes/Video_Localized/logs/missing_vids_FR.csv'
+csv_path = '/Volumes/Video_Localized/logs/missing_vids_MX.csv'
 
 
 class Video(object):
@@ -84,8 +84,11 @@ class Video(object):
         self.urls['music_track'] = info['Music track URL']
         self.urls['recipe'] = info['Recipe URL']
 
-        self.tags = info['YT Tags'].split(', ')
-        self.tags.append(self.country)
+        if info['YT Tags'] != 'None':
+            self.tags = info['YT Tags'].split(', ')
+            self.tags.append(self.country)
+        else:
+            self.tags = [self.country]
 
         logger.info('retrieved info for {} from spreadsheet'.format(self.vid_name))
 
@@ -212,7 +215,7 @@ class Brightcove(object):
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
             'name': video.title,
-            'description': video.description,
+            'long_description': video.description,
             'reference_id': video.reference_id,
             'state': video.state,
             'tags': video.tags,

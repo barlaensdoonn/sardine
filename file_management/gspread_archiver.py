@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # gspread archiver
 # 5/19/16
-# updated 12/18/16
+# updated 7/12/17
 
 import gspread
 import os
@@ -11,7 +11,6 @@ from windy_paths import spread_cred
 
 localized = {'X'}
 localized_NA = {'X', 'N/A'}
-# localized_never = {'N/A'}
 
 source_paths = {
     "US_videos": "/Volumes/Video HD Raid 5/AR US Videos ",
@@ -62,7 +61,8 @@ def get_localized(spreadsheet):
 
     for x in range(spreadsheet.row_count):
         row_value = spreadsheet.row_values(x + 1)
-        row_value_set = set(row_value[3:15])
+        # only look at UK, AU, and QC columns in spreadsheet
+        row_value_set = set([row_value[i] for i in [3, 5, 13]])
         if row_value_set == localized or row_value_set == localized_NA:
             name = replace_chars(row_value[0])
             localized_videos[name] = x + 1
@@ -99,9 +99,9 @@ def find_videos(paths, archive_paths, filename_dict):
 
     if any(video_dict):
         print("FOUND THESE VIDEOS TO ARCHIVE ON THE COMPUTER:")
-
         localized_list_02 = list(video_dict.keys())
         localized_list_02.sort()
+
         for video in localized_list_02:
             print("{}".format(video))
         print("\n")
@@ -130,6 +130,7 @@ def archive(video_dict, spreadsheets):
         if os.path.exists(existing_archive):
             print("{} archive already exists, removing...".format(key))
             os.remove(existing_archive)
+
         print("archiving {}...".format(key))
         shutil.make_archive(archive_file, 'zip', src_file)
 
@@ -147,8 +148,10 @@ def archive(video_dict, spreadsheets):
 
 def update_sheet(row_num, moved, spreadsheets):
     values = spreadsheets[0].row_values(row_num)
+
     if not moved:
         values.append('*** not moved')
+
     print("updating spreadsheet...")
     spreadsheets[1].append_row(values)
 
