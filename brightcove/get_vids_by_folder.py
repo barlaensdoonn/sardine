@@ -69,7 +69,7 @@ if __name__ == '__main__':
     vid_dict = {}
 
     for key in folder_dict:
-        print('getting video titles for {}...'.format(key))
+        print('getting video titles for {}...'.format(key.upper()))
         name_list = []
         offset = 0
         videos = True
