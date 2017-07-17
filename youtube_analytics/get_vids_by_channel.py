@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # get videos by youtube channel
 # 6/6/17
+# updated 7/17/17
 
 import secret
 import pickle
@@ -33,16 +34,6 @@ youtube_scopes = ["https://www.googleapis.com/auth/youtube.readonly",
                   "https://www.googleapis.com/auth/yt-analytics.readonly",
                   # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
                   ]
-
-
-def get_now():
-    now = datetime.now()
-    return now.strftime('%m_%d_%y')
-
-
-def pickle_data(data, now_str):
-    with open('misc/YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
-        pickle.dump(vid_dict, pickl, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 class AuthenticatedQueries(object):
@@ -114,7 +105,17 @@ class AuthenticatedQueries(object):
         self.channel_id = self.channels_list_response["items"][0]["id"]
 
 
-if __name__ == "__main__":
+def get_now():
+    now = datetime.now()
+    return now.strftime('%m_%d_%y')
+
+
+def pickle_data(data, now_str):
+    with open('misc/YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
+        pickle.dump(data, pickl, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def main():
     authenticated_queries = AuthenticatedQueries(client_secrets_files, youtube_scopes)
     authenticated_queries.parse_cli_arguments()
     vid_dict = {country: [] for country in countries}
@@ -135,3 +136,7 @@ if __name__ == "__main__":
             upload_playlist_request = authenticated_queries.youtube.playlistItems().list_next(upload_playlist_request, r)
 
     pickle_data(vid_dict, get_now())
+
+
+if __name__ == "__main__":
+    main()
