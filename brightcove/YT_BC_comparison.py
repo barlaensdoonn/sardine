@@ -3,10 +3,16 @@
 # 6/28/17
 # updated 7/17/17
 
+# import os
+# import sys
 import csv
 import pickle
 import itertools
 from datetime import datetime
+# import get_vids_by_folder
+#
+# sys.path.append(os.path.abspath(os.path.join('..', 'youtube_analytics')))
+# import get_vids_by_channel
 
 
 countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
