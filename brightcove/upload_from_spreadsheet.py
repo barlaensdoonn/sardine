@@ -20,7 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = '/Volumes/Video_Localized/logs/missing_vids_MX.csv'
+csv_path = '/Volumes/Video_Localized/logs/missing_vids_PL.csv'
 
 
 class Video(object):
@@ -40,7 +40,7 @@ class Video(object):
         self.vid_name = self.name[0:-3]
         self.sheet_name = self.vid_name.replace('_', ' ').lower()
         self.country = self.name[-2:].lower()
-        self.state = 'ACTIVE'
+        self.state = 'INACTIVE'
         self.id = None
         self.json = None
 
