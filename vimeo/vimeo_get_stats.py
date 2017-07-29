@@ -8,6 +8,7 @@ import vimeo_credents
 
 
 # api request goes here, while loop will step through pages until exhausted
+# TODO: try out json filter: https://developer.vimeo.com/api/common-formats#json-filter
 api_call = '/me/videos?sort=alphabetical'
 
 
