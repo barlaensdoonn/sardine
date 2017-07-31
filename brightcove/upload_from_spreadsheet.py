@@ -1,8 +1,7 @@
 #!/usr/local/bin/python3
 # brightcove from spreadsheet
 # 4/18/17
-# updated 6/28/17
-
+# updated 7/31/17
 
 import os
 import sys
