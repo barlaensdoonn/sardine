@@ -79,6 +79,10 @@ class Video(object):
         self._get_source_ids(source_id_dict)
         self._get_stills_paths()
 
+    def _exit(self):
+        logger.warning('exiting...')
+        sys.exit()
+
     def _get_info(self, sprdsht):
         try:
             info = sprdsht.loc[self.sheet_name]
@@ -88,7 +92,7 @@ class Video(object):
             sys.exit()
 
         self.title = info['Localized title']
-        self.description = info['Description']
+        # self.description = info['Description']
         self.reference_id = info['RecipeID-Country']
 
         self.urls['youtube'] = info['YT URL']
@@ -271,7 +275,7 @@ class Brightcove(object):
         url = "https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/".format(pubid=self.pub_id)
         data = {
             'name': video.title,
-            'long_description': video.description,
+            # 'long_description': video.description,
             'reference_id': video.reference_id,
             'state': video.state,
             'tags': video.tags,
