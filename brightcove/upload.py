@@ -95,7 +95,7 @@ class Video(object):
                 break
         else:
             logger.warning('did not find music info for {}'.format(self.vid_name))
-            self._exit()()
+            self._exit()
 
     def _get_source_ids(self, source_id_dict):
         '''
@@ -113,7 +113,7 @@ class Video(object):
                 break
         else:
             logger.warning('did not find source ID for {}'.format(self.vid_name))
-            self._exit()()
+            self._exit()
 
     def _set_stills_paths(self, still, still_path):
         '''
@@ -150,7 +150,7 @@ class Video(object):
                         return
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
-            self._exit()()
+            self._exit()
 
     def extract_url_and_ref_id(self, sheet):
         '''
@@ -169,13 +169,13 @@ class Video(object):
 
             if not recipe_url and not ref_id:
                 logger.warning('did not find recipe url or reference id for {}'.format(self.name))
-                self._exit()()
+                self._exit()
             elif not recipe_url and ref_id:
                 logger.warning('did not find recipe url for {}'.format(self.name))
-                self._exit()()
+                self._exit()
             elif recipe_url and not ref_id:
                 logger.warning('did not find reference id for {}'.format(self.name))
-                self._exit()()
+                self._exit()
             elif recipe_url and ref_id:
                 logger.info('found recipe url and reference id for {}'.format(self.name))
 
