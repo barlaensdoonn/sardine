@@ -200,6 +200,11 @@ class Brightcove(object):
         logger.error('exiting...')
         sys.exit()
 
+    def _log_error_and_exit(self, r):
+        logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+        logger.error(r.text)
+        self._exit()
+
     def _get_authorization_headers(self):
         '''
         convenience method that obtains an OAuth access token and embeds it
@@ -217,9 +222,7 @@ class Brightcove(object):
             access_token = r.json().get('access_token')
         else:
             logger.error('unable to get acces token from brightcove')
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
@@ -240,9 +243,7 @@ class Brightcove(object):
             return folders
         else:
             logger.error('unable to get folder list')
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
     def search_for_video(self, ref_id):
         '''
@@ -301,9 +302,7 @@ class Brightcove(object):
             logger.info('created video object {} on brightcove'.format(video.name))
         else:
             logger.error('unable to create video object {}'.format(video.name))
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
     def move_to_folder(self, video):
         '''
@@ -317,9 +316,7 @@ class Brightcove(object):
             logger.info('moved {} into {} folder'.format(video.name, video.country.upper()))
         else:
             logger.error('unable to move {} into {} folder'.format(video.name, video.country.upper()))
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
     def delete_video(self, video):
         '''
@@ -332,9 +329,7 @@ class Brightcove(object):
             logger.info('{} deleted from brightcove'.format(video.name))
         else:
             logger.error('unable to delete {}'.format(video.name))
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
     def get_upload_urls(self, file, key):
         '''
@@ -353,9 +348,7 @@ class Brightcove(object):
             logger.info('received upload url for {}'.format(key))
         else:
             logger.error('did not receive upload url for {}'.format(key))
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
     def upload(self, video, key):
         '''
@@ -374,9 +367,7 @@ class Brightcove(object):
                 video.paths['uploaded'] = os.path.join(uploaded_path, video.filename)
         else:
             logger.error('unable to upload {} for {}'.format(key, video.name))
-            logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
-            logger.error(s.text)
-            self._exit()
+            self._log_error_and_exit(s)
 
     def di_request(self, video):
         '''
@@ -406,9 +397,7 @@ class Brightcove(object):
             logger.info('files for {} ingested'.format(video.name))
         else:
             logger.error('unable to ingest files for {}'.format(video.name))
-            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
-            logger.error(r.text)
-            self._exit()
+            self._log_error_and_exit(r)
 
 
 class Spreadsheet(object):
