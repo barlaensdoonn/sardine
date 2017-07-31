@@ -20,7 +20,14 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = input('please give me the full path to the csv\n')
+csv_path = '/Volumes/Video_Localized/logs/missing_vids_UK.csv'
+
+try:
+    proceed = input('\nwould you like to use the following csv?\n{}\n'.format(csv_path))
+    if proceed.lower() not in ['yes', 'y']:
+        csv_path = input('please paste in the full path to the csv:\n')
+except KeyboardInterrupt:
+    sys.exit('...user exit received...')
 
 
 class Video(object):
@@ -132,6 +139,8 @@ class Video(object):
                         return
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
+            logger.warning('exiting...')
+            sys.exit()
 
     def move(self):
         if self.paths['uploaded']:
@@ -166,6 +175,8 @@ class Brightcove(object):
             logger.error('unable to get acces token from brightcove')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
@@ -188,7 +199,8 @@ class Brightcove(object):
             logger.error('unable to get folder list')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
-            sys.exit('exiting script')
+            logger.error('exiting...')
+            sys.exit()
 
     def search_for_video(self, ref_id):
         '''
@@ -250,6 +262,8 @@ class Brightcove(object):
             logger.error('unable to create video object {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
     def move_to_folder(self, video):
         '''
@@ -265,6 +279,8 @@ class Brightcove(object):
             logger.error('unable to move {} into {} folder'.format(video.name, video.country.upper()))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
     def delete_video(self, video):
         '''
@@ -279,6 +295,8 @@ class Brightcove(object):
             logger.error('unable to delete {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
     def get_upload_urls(self, file, key):
         '''
@@ -299,6 +317,8 @@ class Brightcove(object):
             logger.error('did not receive upload url for {}'.format(key))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
     def upload(self, video, key):
         '''
@@ -319,6 +339,8 @@ class Brightcove(object):
             logger.error('unable to upload {} for {}'.format(key, video.name))
             logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
             logger.error(s.text)
+            logger.error('exiting...')
+            sys.exit()
 
     def di_request(self, video):
         '''
@@ -350,6 +372,8 @@ class Brightcove(object):
             logger.error('unable to ingest files for {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            logger.error('exiting...')
+            sys.exit()
 
 
 if __name__ == '__main__':

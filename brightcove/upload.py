@@ -73,6 +73,10 @@ class Video(object):
         self._get_source_ids(source_id_dict)
         self._get_stills_paths()
 
+    def _exit(self):
+        logger.warning('exiting...')
+        sys.exit()
+
     def _get_music_info(self, music_dict):
         '''
         find music track, author, and source url from list of spreadsheet records
@@ -91,6 +95,7 @@ class Video(object):
                 break
         else:
             logger.warning('did not find music info for {}'.format(self.vid_name))
+            self._exit()()
 
     def _get_source_ids(self, source_id_dict):
         '''
@@ -108,6 +113,7 @@ class Video(object):
                 break
         else:
             logger.warning('did not find source ID for {}'.format(self.vid_name))
+            self._exit()()
 
     def _set_stills_paths(self, still, still_path):
         '''
@@ -144,6 +150,7 @@ class Video(object):
                         return
         else:
             logger.warning('did not find stills for {}'.format(self.vid_name))
+            self._exit()()
 
     def extract_url_and_ref_id(self, sheet):
         '''
@@ -162,10 +169,13 @@ class Video(object):
 
             if not recipe_url and not ref_id:
                 logger.warning('did not find recipe url or reference id for {}'.format(self.name))
+                self._exit()()
             elif not recipe_url and ref_id:
                 logger.warning('did not find recipe url for {}'.format(self.name))
+                self._exit()()
             elif recipe_url and not ref_id:
                 logger.warning('did not find reference id for {}'.format(self.name))
+                self._exit()()
             elif recipe_url and ref_id:
                 logger.info('found recipe url and reference id for {}'.format(self.name))
 
@@ -186,6 +196,10 @@ class Brightcove(object):
         self.pub_id = bright_brick_road.pub_id
         self.folders = self._get_folders()
 
+    def _exit(self):
+        logger.error('exiting...')
+        sys.exit()
+
     def _get_authorization_headers(self):
         '''
         convenience method that obtains an OAuth access token and embeds it
@@ -205,6 +219,7 @@ class Brightcove(object):
             logger.error('unable to get acces token from brightcove')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            self._exit()
 
         return {'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json"}
 
@@ -227,7 +242,7 @@ class Brightcove(object):
             logger.error('unable to get folder list')
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
-            sys.exit('exiting script')
+            self._exit()
 
     def search_for_video(self, ref_id):
         '''
@@ -286,6 +301,9 @@ class Brightcove(object):
             logger.info('created video object {} on brightcove'.format(video.name))
         else:
             logger.error('unable to create video object {}'.format(video.name))
+            logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
+            logger.error(r.text)
+            self._exit()
 
     def move_to_folder(self, video):
         '''
@@ -301,6 +319,7 @@ class Brightcove(object):
             logger.error('unable to move {} into {} folder'.format(video.name, video.country.upper()))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            self._exit()
 
     def delete_video(self, video):
         '''
@@ -315,6 +334,7 @@ class Brightcove(object):
             logger.error('unable to delete {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            self._exit()
 
     def get_upload_urls(self, file, key):
         '''
@@ -335,6 +355,7 @@ class Brightcove(object):
             logger.error('did not receive upload url for {}'.format(key))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            self._exit()
 
     def upload(self, video, key):
         '''
@@ -355,6 +376,7 @@ class Brightcove(object):
             logger.error('unable to upload {} for {}'.format(key, video.name))
             logger.error('status code: {}, reason: {}'.format(s.status_code, s.reason))
             logger.error(s.text)
+            self._exit()
 
     def di_request(self, video):
         '''
@@ -386,6 +408,7 @@ class Brightcove(object):
             logger.error('unable to ingest files for {}'.format(video.name))
             logger.error('status code: {}, reason: {}'.format(r.status_code, r.reason))
             logger.error(r.text)
+            self._exit()
 
 
 class Spreadsheet(object):
@@ -399,6 +422,10 @@ class Spreadsheet(object):
         self.sheets = self._get_sheets()
         self.music_dict = self._compile_music()
         self.source_dict = self._compile_sources()
+
+    def _exit(self):
+        logger.error('exiting...')
+        sys.exit()
 
     def _authenticate(self):
         '''
@@ -418,7 +445,7 @@ class Spreadsheet(object):
 
         else:
             logger.error('unable to authenticate with gspread')
-            sys.exit('exiting the script')
+            self._exit()
 
         return gspread.authorize(credentials)
 
@@ -466,7 +493,7 @@ class Spreadsheet(object):
             return sht
         except gspread.SpreadsheetNotFound:
             logger.warning('did not find spreadsheet titled {}'.format(title))
-            return None
+            self._exit()
 
 
 if __name__ == '__main__':
