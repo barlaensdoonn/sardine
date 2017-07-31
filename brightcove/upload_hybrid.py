@@ -368,7 +368,7 @@ class Brightcove(object):
                 video.paths['uploaded'] = os.path.join(uploaded_path, video.filename)
         else:
             logger.error('unable to upload {} for {}'.format(key, video.name))
-            self._log_error_and_exit(r)
+            self._log_error_and_exit(s)
 
     def di_request(self, video):
         '''
