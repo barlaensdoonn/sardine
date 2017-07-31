@@ -20,7 +20,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 search_path = bright_brick_road.search_path
 uploaded_path = bright_brick_road.uploaded
-csv_path = '/Volumes/Video_Localized/logs/missing_vids_PL.csv'
+csv_path = input('please give me the full path to the csv\n')
 
 
 class Video(object):
@@ -71,7 +71,12 @@ class Video(object):
         self._get_stills_paths()
 
     def _get_info(self, sprdsht):
-        info = sprdsht.loc[self.sheet_name]
+        try:
+            info = sprdsht.loc[self.sheet_name]
+        except Exception:
+            logger.warning('did not find info for {} in spreadsheet'.format(self.vid_name))
+            logger.warning('exiting...')
+            sys.exit()
 
         self.title = info['Localized title']
         self.description = info['Description']
