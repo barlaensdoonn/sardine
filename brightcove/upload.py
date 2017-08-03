@@ -410,7 +410,7 @@ if __name__ == '__main__':
         sys.exit('not connected to P Drive')
 
     brightcove = Brightcove()
-    spreadsheets = gspreadsheet.Spreadsheet()
+    spreadsheets = gspreadsheet.Spreadsheet(logger)
 
     for direntry in os.scandir(search_path):
 
