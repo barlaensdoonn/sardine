@@ -87,9 +87,18 @@ class Copier(object):
         self.dropbox_paths = {country: os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}'.format(country)) for country in self.countries}
 
         self.stills_paths = {
-            'square': '/Volumes/public/International/Editorial/Video/Recipe Images/SQUARE',
-            'hd': '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720',
-            'raw': '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images',
+            'square': [
+                '/Volumes/public/International/Editorial/Video/Recipe Images/SQUARE',
+                '/Volumes/Video HD Raid 5/Dropbox (Meredith)/recipe_images/SQUARE'
+            ],
+            'hd': [
+                '/Volumes/public/International/Editorial/Video/Recipe Images/YouTube 1280x720',
+                '/Volumes/Video HD Raid 5/Dropbox (Meredith)/recipe_images/YouTube 1280x720'
+            ],
+            'raw': [
+                '/Volumes/public/International/Editorial/Video/Recipe Images/Raw Images',
+                '/Volumes/Video HD Raid 5/Dropbox (Meredith)/recipe_images/Raw Images'
+            ],
         }
 
         self.archive_paths = {
@@ -128,23 +137,26 @@ class Copier(object):
         stills_base_path = os.path.join("/".join(archive_path.split("/")[:-3]), self.stills_path)
 
         for pic in os.scandir(stills_base_path):
+            still_dsts = []
             filename = os.path.splitext(pic.name)[0].lower()
             file_end = filename.split('_')[-1]
 
             if file_end in self.stills_paths.keys():
-                still_dst = os.path.join(self.stills_paths[file_end], pic.name)
-            elif file_end == '250' or file_end == '720'or file_end == '960' or file_end == 'SQUARE':
-                still_dst = os.path.join(self.stills_paths['square'], pic.name)
-            else:
-                still_dst = None
+                for path in self.stills_paths[file_end]:
+                    still_dsts.append(os.path.join(path, pic.name))
+            elif file_end == '250' or file_end == '720' or file_end == '960':
+                for path in self.stills_paths[file_end]:
+                    still_dsts.append(os.path.join(path, pic.name))
 
-            if still_dst and not os.path.isfile(still_dst):
-                print('copying {}'.format(pic.name))
-                shutil.copy2(pic.path, still_dst)
-                self.stats['stills'].append(pic.name)
+            if still_dsts:
+                for still_dst in still_dsts:
+                    if not os.path.isfile(still_dst):
+                        print('copying {}'.format(pic.name))
+                        shutil.copy2(pic.path, still_dst)
+                        self.stats['stills'].append(pic.name)
 
-            elif still_dst and os.path.isfile(still_dst):
-                print('{} already exists'.format(pic.name))
+                    elif os.path.isfile(still_dst):
+                        print('{} already exists'.format(pic.name))
 
         print('\n')
 
