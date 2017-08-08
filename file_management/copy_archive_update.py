@@ -145,7 +145,7 @@ class Copier(object):
                 for path in self.stills_paths[file_end]:
                     still_dsts.append(os.path.join(path, pic.name))
             elif file_end == '250' or file_end == '720' or file_end == '960':
-                for path in self.stills_paths[file_end]:
+                for path in self.stills_paths['square']:
                     still_dsts.append(os.path.join(path, pic.name))
 
             if still_dsts:
