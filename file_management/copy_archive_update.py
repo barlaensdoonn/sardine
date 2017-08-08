@@ -347,7 +347,7 @@ if __name__ == '__main__':
         raise Exception("not connected to P Drive")
     if not os.path.isdir(copier.country_paths['FR']):
         raise Exception("not connected to Google Drive")
-    if not os.path.isdir(copier.country_paths['PL']):
+    if not os.path.isdir(copier.country_paths['UK']):
         raise Exception("DropBox directory not configured")
 
     sheets.authenticate()
