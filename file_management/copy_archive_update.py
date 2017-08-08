@@ -380,7 +380,7 @@ if __name__ == '__main__':
                 sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
             except Exception as e:
                 print('could not update spreadsheet for {}:'.format(vid_name))
-                traceback.print_exc()
+                # traceback.print_exc()
                 print("\n")
 
     copier.print_report()
