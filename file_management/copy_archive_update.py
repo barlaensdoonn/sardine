@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
-# updated: 6/28/17
+# updated: 8/7/17
 
 import gspread
 import os
