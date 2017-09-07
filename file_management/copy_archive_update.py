@@ -74,12 +74,15 @@ class Spreadsheet(object):
         found_vid = spreadsheet.find(sheet_names[vid_name.lower()])
         return spreadsheet.cell(found_vid.row, self.country_columns[country])
 
-    def _format_cell_value(new_value, crrnt_value):
+    def _format_cell_value(self, new_value, crrnt_value):
         '''
-        if new value already in current value, then current value is correct, return None and don't update;
+        if current value is 'T' or 'N/A', we will overwrite them with the new value;
+        elif new value already in current value, then current value is correct, return None and don't update;
         else add new value to current value and return as alphabetically sorted string
         '''
-        if ',' in crrnt_value:
+        if crrnt_value.lower() == 't' or crrnt_value.lower() == 'n/a':
+            crrnt = []
+        elif ',' in crrnt_value:
             crrnt = crrnt_value.split(',')
         else:
             crrnt = list(crrnt_value)
@@ -100,7 +103,7 @@ class Spreadsheet(object):
             # if cell already has a value, run it through format method
             value = self._format_cell_value(value, target_cell.value)
         if value:
-            spreadsheet.update_cell(target_cell.row, target_cell.column, value)
+            spreadsheet.update_cell(target_cell.row, target_cell.col, value)
 
 
 class Copier(object):
