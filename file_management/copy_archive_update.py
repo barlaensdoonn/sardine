@@ -1,12 +1,11 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
-# updated: 8/7/17
+# updated: 9/7/17
 
 import gspread
 import os
 import shutil
-import traceback
 from oauth2client.service_account import ServiceAccountCredentials
 import windy_paths
 
@@ -70,9 +69,37 @@ class Spreadsheet(object):
     def make_sheets_dict(self):
         self.sheets_dict = {flags[i]: self.spreadsheets[i] for i in range(len(self.spreadsheets))}
 
-    def update_sheet(self, spreadsheet, sheet_names, vid_name, country):
-        found_vid = spreadsheet.find(sheet_names[vid_name])
-        spreadsheet.update_cell(found_vid.row, self.country_columns[country], 'X')
+    def _find_cell(self, spreadsheet, sheet_names, vid_name, country):
+        found_vid = spreadsheet.find(sheet_names[vid_name.lower()])
+        return spreadsheet.cell(found_vid.row, self.country_columns[country])
+
+    def _format_cell_value(new_value, crrnt_value):
+        '''
+        if new value already in current value, then current value is correct, return None and don't update;
+        else add new value to current value and return as alphabetically sorted string
+        '''
+        if ',' in crrnt_value:
+            crrnt = crrnt_value.split(',')
+        else:
+            crrnt = list(crrnt_value)
+
+        if new_value in crrnt:
+            # current cell value already correct, don't update
+            return None
+        else:
+            crrnt.append(new_value)
+            crrnt.sort()
+            return ','.join(crrnt)
+
+    def update_sheet(self, spreadsheet, sheet_names, vid_name, country, social):
+        value = 'S' if social else 'X'
+        target_cell = self._find_cell(spreadsheet, sheet_names, vid_name, country)
+
+        if target_cell.value:
+            # if cell already has a value, run it through format method
+            value = self._format_cell_value(value, target_cell.value)
+        if value:
+            spreadsheet.update_cell(target_cell.row, target_cell.column, value)
 
 
 class Copier(object):
@@ -376,9 +403,9 @@ if __name__ == '__main__':
 
         copier.copy(vid_name, country, social, file_name, src_file, archive_path, backup_src, flag, country_path)
 
-        if flag not in ['copy_zip', 'copy_zip_US', 'not_found'] and not social:
+        if flag not in ['copy_zip', 'copy_zip_US', 'not_found']:
             try:
-                sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name.lower(), country)
+                sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name, country, social)
             except Exception as e:
                 print('could not update spreadsheet for {}:'.format(vid_name))
                 # traceback.print_exc()
