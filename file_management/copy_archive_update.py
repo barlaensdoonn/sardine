@@ -6,6 +6,7 @@
 import gspread
 import os
 import shutil
+import traceback
 from oauth2client.service_account import ServiceAccountCredentials
 import windy_paths
 
@@ -407,8 +408,8 @@ if __name__ == '__main__':
             try:
                 sheets.update_sheet(sheets.sheets_dict[flag], sheets.sheet_names_dict[flag], vid_name, country, social)
             except Exception as e:
-                print('could not update spreadsheet for {}:'.format(vid_name))
-                # traceback.print_exc()
+                print('could not update spreadsheet for {}:\n'.format(vid_name))
+                traceback.print_exc()
                 print("\n")
 
     copier.print_report()
