@@ -6,6 +6,7 @@
 import secret
 import pickle
 import httplib2
+import traceback
 from datetime import datetime, timedelta
 
 from apiclient.discovery import build
@@ -111,8 +112,12 @@ def get_now():
 
 
 def pickle_data(data, now_str):
-    with open('misc/YT_vids_by_channel_{}.p'.format(now_str), 'wb') as pickl:
+    pckl_path = 'misc/YT_pickles/YT_vids_by_channel_{}.p'.format(now_str)
+
+    with open(pckl_path, 'wb') as pickl:
         pickle.dump(data, pickl, protocol=pickle.HIGHEST_PROTOCOL)
+
+    print('data pickled to {}'.format(pckl_path))
 
 
 def main():
@@ -121,20 +126,24 @@ def main():
     vid_dict = {country: [] for country in countries}
 
     for country in countries:
-        print('getting YT videos titles for {}'.format(country))
-        authenticated_queries.get_authenticated_services(country)
+        try:
+            print('getting YT videos titles for {}'.format(country))
+            authenticated_queries.get_authenticated_services(country)
 
-        # taken from https://github.com/youtube/api-samples/blob/master/python/my_uploads.py
-        channels_response = authenticated_queries.youtube.channels().list(mine=True, part="contentDetails").execute()
-        upload_playlist_id = channels_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-        upload_playlist_request = authenticated_queries.youtube.playlistItems().list(playlistId=upload_playlist_id, part='snippet', maxResults=50)
+            # taken from https://github.com/youtube/api-samples/blob/master/python/my_uploads.py
+            channels_response = authenticated_queries.youtube.channels().list(mine=True, part="contentDetails").execute()
+            upload_playlist_id = channels_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+            upload_playlist_request = authenticated_queries.youtube.playlistItems().list(playlistId=upload_playlist_id, part='snippet', maxResults=50)
 
-        while upload_playlist_request:
-            r = upload_playlist_request.execute()
-            for item in r['items']:
-                vid_dict[country].append(item['snippet']['title'])
+            while upload_playlist_request:
+                r = upload_playlist_request.execute()
+                for item in r['items']:
+                    vid_dict[country].append(item['snippet']['title'])
 
-            upload_playlist_request = authenticated_queries.youtube.playlistItems().list_next(upload_playlist_request, r)
+                upload_playlist_request = authenticated_queries.youtube.playlistItems().list_next(upload_playlist_request, r)
+        except Exception:
+            print('\nexception encountered trying to get video titles for {}\n'.format(country))
+            traceback.print_exc()
 
     pickle_data(vid_dict, get_now())
 
