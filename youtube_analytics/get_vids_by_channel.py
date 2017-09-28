@@ -8,7 +8,6 @@ import pickle
 import httplib2
 import traceback
 from datetime import datetime, timedelta
-
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.client import flow_from_clientsecrets
@@ -24,17 +23,15 @@ from oauth2client.tools import argparser, run_flow
 # For more information about using OAuth2 to access the YouTube Data API, see: https://developers.google.com/youtube/v3/guides/authentication
 # For more information about the client_secrets.json file format, see: https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 
-# list used to loop through the client_secrets_files to authenticate and get analytics report
-countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
-
-client_secrets_files = secret.client_secrets_files
-
 # These OAuth 2.0 access scopes allow for read-only access to the authenticated
 # user's account for both YouTube Data API resources and YouTube Analytics Data.
 youtube_scopes = ["https://www.googleapis.com/auth/youtube.readonly",
                   "https://www.googleapis.com/auth/yt-analytics.readonly",
                   # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
                   ]
+
+countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]  # used to loop through the client_secrets_files
+client_secrets_files = secret.client_secrets_files
 
 
 class AuthenticatedQueries(object):
@@ -112,12 +109,11 @@ def get_now():
 
 
 def pickle_data(data, now_str):
-    pckl_path = 'misc/YT_pickles/YT_vids_by_channel_{}.p'.format(now_str)
+    pckl_path = 'misc/YT_pickles/titles/YT_vids_by_channel_{}.p'.format(now_str)
+    print('got titles for all channels, pickling as: {}'.format(pckl_path))
 
     with open(pckl_path, 'wb') as pickl:
         pickle.dump(data, pickl, protocol=pickle.HIGHEST_PROTOCOL)
-
-    print('data pickled to {}'.format(pckl_path))
 
 
 def main():
