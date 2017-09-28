@@ -6,6 +6,7 @@
 import secret
 import pickle
 import httplib2
+import traceback
 from datetime import datetime, timedelta
 
 from apiclient.discovery import build
@@ -23,17 +24,15 @@ from oauth2client.tools import argparser, run_flow
 # For more information about using OAuth2 to access the YouTube Data API, see: https://developers.google.com/youtube/v3/guides/authentication
 # For more information about the client_secrets.json file format, see: https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 
-# list used to loop through the client_secrets_files to authenticate and get analytics report
-countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
-
-client_secrets_files = secret.client_secrets_files
-
 # These OAuth 2.0 access scopes allow for read-only access to the authenticated
 # user's account for both YouTube Data API resources and YouTube Analytics Data.
 youtube_scopes = ["https://www.googleapis.com/auth/youtube.readonly",
                   "https://www.googleapis.com/auth/yt-analytics.readonly",
                   # "https://www.googleapis.com/auth/yt-analytics-monetary.readonly"
                   ]
+
+countries = ["AU", "AR", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]  # used to loop through the client_secrets_files
+client_secrets_files = secret.client_secrets_files
 
 
 class AuthenticatedQueries(object):
@@ -111,10 +110,10 @@ def get_now():
 
 
 def pickle_data(data, now_str):
-    filename = 'misc/YT_info_all_channels_{}.p'.format(now_str)
-    print('got info for all channels, pickling as: {}'.format(filename))
+    pckl_path = 'misc/YT_pickles/all_info/YT_info_all_channels_{}.p'.format(now_str)
+    print('got info for all channels, pickling as: {}'.format(pckl_path))
 
-    with open(filename, 'wb') as pickl:
+    with open(pckl_path, 'wb') as pickl:
         pickle.dump(data, pickl, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -124,24 +123,28 @@ def main():
     vid_dict = {country: [] for country in countries}
 
     for country in countries:
-        print('getting all info for {}'.format(country))
-        authenticated_queries.get_authenticated_services(country)
+        try:
+            print('getting all info for {}'.format(country))
+            authenticated_queries.get_authenticated_services(country)
 
-        # taken from https://github.com/youtube/api-samples/blob/master/python/my_uploads.py
-        channels_response = authenticated_queries.youtube.channels().list(mine=True, part="contentDetails").execute()
-        upload_playlist_id = channels_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-        upload_playlist_request = authenticated_queries.youtube.playlistItems().list(playlistId=upload_playlist_id, part='snippet', maxResults=50)
+            # taken from https://github.com/youtube/api-samples/blob/master/python/my_uploads.py
+            channels_response = authenticated_queries.youtube.channels().list(mine=True, part="contentDetails").execute()
+            upload_playlist_id = channels_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+            upload_playlist_request = authenticated_queries.youtube.playlistItems().list(playlistId=upload_playlist_id, part='snippet', maxResults=50)
 
-        while upload_playlist_request:
-            r = upload_playlist_request.execute()
-            print('got 50 videos...')
-            for item in r['items']:
-                # NOTE: to search this later, use item['snippet']['title']
-                vid_dict[country].append(item)
+            while upload_playlist_request:
+                r = upload_playlist_request.execute()
+                print('got 50 videos...')
+                for item in r['items']:
+                    # NOTE: to search this later, use item['snippet']['title']
+                    vid_dict[country].append(item)
 
-            upload_playlist_request = authenticated_queries.youtube.playlistItems().list_next(upload_playlist_request, r)
+                upload_playlist_request = authenticated_queries.youtube.playlistItems().list_next(upload_playlist_request, r)
 
-        print('got channel info for {}\n'.format(country))
+            print('got channel info for {}\n'.format(country))
+        except Exception:
+            print('\nexception encountered trying to get channel info for {}\n'.format(country))
+            traceback.print_exc()
 
     pickle_data(vid_dict, get_now())
 
