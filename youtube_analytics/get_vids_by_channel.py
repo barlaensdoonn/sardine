@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # get videos by youtube channel
 # 6/6/17
-# updated 7/17/17
+# updated 9/28/17
 
 import secret
 import pickle
