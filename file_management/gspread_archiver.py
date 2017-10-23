@@ -9,8 +9,7 @@ import shutil
 from oauth2client.service_account import ServiceAccountCredentials
 from windy_paths import spread_cred
 
-localized = {'X'}
-localized_NA = {'X', 'N/A'}
+localized_sets = [{'X'}, {'S,X'}, {'X', 'S,X'}, {'X', 'N/A'}, {'X', 'S,X', 'N/A'}]
 
 source_paths = {
     "US_videos": "/Volumes/Video HD Raid 5/AR US Videos ",
@@ -63,7 +62,7 @@ def get_localized(spreadsheet):
         row_value = spreadsheet.row_values(x + 1)
         # only look at UK, AU, and QC columns in spreadsheet
         row_value_set = set([row_value[i] for i in [3, 5, 13]])
-        if row_value_set == localized or row_value_set == localized_NA:
+        if row_value_set in localized_sets:
             name = replace_chars(row_value[0])
             localized_videos[name] = x + 1
 
