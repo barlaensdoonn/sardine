@@ -333,8 +333,8 @@ class Copier(object):
             self._copy_dropbox(country, file_name, src_file)
 
             if social:
-                print("moving {} to uploaded folder\n".format(file_name))
-                shutil.move(src_file, os.path.join(windy_paths.uploaded_dir, file_name))
+                print("moving {} to copied folder\n".format(file_name))
+                shutil.move(src_file, os.path.join(windy_paths.copied_dir, file_name))
             else:
                 print("moving {} to brightcove folder\n".format(file_name))
                 shutil.move(src_file, os.path.join(windy_paths.brightcove_dir, file_name))
