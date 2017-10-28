@@ -182,13 +182,20 @@ class Copier(object):
             if still_dsts:
                 for still_dst in still_dsts:
                     if not os.path.isfile(still_dst):
-                        print('copying {}'.format(pic.name))
+                        if 'dropbox' in still_dst.lower():
+                            print('copying {} to DropBox...'.format(pic.name))
+                        else:
+                            print('copying {} to P Drive...'.format(pic.name))
                         shutil.copy2(pic.path, still_dst)
+
                         if pic.name not in self.stats['stills']:
                             self.stats['stills'].append(pic.name)
 
                     elif os.path.isfile(still_dst):
-                        print('{} already exists'.format(pic.name))
+                        if 'dropbox' in still_dst.lower():
+                            print('{} already exists in DropBox'.format(pic.name))
+                        elif 'public' in still_dst.lower():
+                            print('{} already exists on P Drive'.format(pic.name))
 
         print('\n')
 
