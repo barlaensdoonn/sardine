@@ -1,13 +1,14 @@
 #!/usr/local/bin/python3
 # gspread archiver
 # 5/19/16
-# updated 7/12/17
+# updated 11/12/17
 
-import gspread
 import os
 import shutil
+import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from windy_paths import spread_cred
+
 
 localized_sets = [{'X'}, {'S,X'}, {'X', 'S,X'}, {'X', 'N/A'}, {'X', 'S,X', 'N/A'}]
 
@@ -29,7 +30,7 @@ def authenticate():
     authenticates account with Google drive
     returns a tuple of the Pending tab and the archived by robot spreadsheet from the Master List
     '''
-    print('authenticating to Google Sheets...\n')
+    print('authenticating to Google Sheets...')
 
     scope = ['https://spreadsheets.google.com/feeds']
     credentials = ServiceAccountCredentials.from_json_keyfile_name(spread_cred, scope)
@@ -73,9 +74,8 @@ def get_localized(spreadsheet):
         localized_list.sort()
         for video in localized_list:
             print("{}".format(video))
-        print("\n")
     else:
-        print("NO VIDEOS FOR ARCHIVING FOUND IN MASTER LIST")
+        print("\nNO VIDEOS FOR ARCHIVING FOUND IN MASTER LIST")
 
     return localized_videos
 
@@ -97,23 +97,21 @@ def find_videos(paths, archive_paths, filename_dict):
                     video_dict[dir.name] = dir.path, os.path.join(archive_paths['archive'], dir.name), os.path.join(archive_paths['move'], dir.name), filename_dict[dir.name]
 
     if any(video_dict):
-        print("FOUND THESE VIDEOS TO ARCHIVE ON THE COMPUTER:")
+        print("\nFOUND THESE VIDEOS TO ARCHIVE ON THE COMPUTER:")
         localized_list_02 = list(video_dict.keys())
         localized_list_02.sort()
 
         for video in localized_list_02:
             print("{}".format(video))
-        print("\n")
 
         if filename_dict.keys() == video_dict.keys():
-            print("ALL VIDEOS FROM MASTER LIST FOUND ON COMPUTER\n")
+            print("\nALL VIDEOS FROM MASTER LIST FOUND ON COMPUTER")
         else:
-            print("THESE VIDEOS WERE NOT FOUND ON THE COMPUTER:")
+            print("\nTHESE VIDEOS WERE NOT FOUND ON THE COMPUTER:")
             print(set(filename_dict.keys()) - set(video_dict.keys()))
-            print("\n")
 
     else:
-        print("DIDN'T FIND ANY VIDEOS TO ARCHIVE ON COMPUTER\n")
+        print("\nDIDN'T FIND ANY VIDEOS TO ARCHIVE ON COMPUTER")
 
     return video_dict
 
@@ -127,10 +125,10 @@ def archive(video_dict, spreadsheets):
         existing_archive = (archive_file + '.zip')
 
         if os.path.exists(existing_archive):
-            print("{} archive already exists, removing...".format(key))
+            print("\n{} archive already exists, removing...".format(key))
             os.remove(existing_archive)
 
-        print("archiving {}...".format(key))
+        print("\narchiving {}...".format(key))
         shutil.make_archive(archive_file, 'zip', src_file)
 
         if os.path.exists(move_file):
@@ -142,7 +140,7 @@ def archive(video_dict, spreadsheets):
             moved = True
 
         update_sheet(row_num, moved, spreadsheets)
-        print("done\n")
+        print("done")
 
 
 def update_sheet(row_num, moved, spreadsheets):
