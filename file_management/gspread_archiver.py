@@ -108,7 +108,10 @@ def find_videos(paths, archive_paths, filename_dict):
             print("\nALL VIDEOS FROM MASTER LIST FOUND ON COMPUTER")
         else:
             print("\nTHESE VIDEOS WERE NOT FOUND ON THE COMPUTER:")
-            print(set(filename_dict.keys()) - set(video_dict.keys()))
+            missing = set(filename_dict.keys()) - set(video_dict.keys())
+
+            for video in missing:
+                print("{}".format(video))
 
     else:
         print("\nDIDN'T FIND ANY VIDEOS TO ARCHIVE ON COMPUTER")
