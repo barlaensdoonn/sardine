@@ -384,8 +384,8 @@ if __name__ == '__main__':
 
     if not os.path.isdir(copier.country_paths['AR']):
         raise Exception("not connected to P Drive")
-    if not os.path.isdir(copier.country_paths['FR']):
-        raise Exception("not connected to Google Drive")
+    # if not os.path.isdir(copier.country_paths['FR']):
+    #     raise Exception("not connected to Google Drive")
     if not os.path.isdir(copier.country_paths['UK']):
         raise Exception("DropBox directory not configured")
 
