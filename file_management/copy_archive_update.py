@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
-# updated: 9/7/17
+# updated: 11/12/17
 
 import gspread
 import os
@@ -277,7 +277,7 @@ class Copier(object):
         scans through {archive_paths} to look for video directory, returns a tuple based on the results.
 
         if no Exports/localizedVP9 directory exists, one is made
-        if it finds /vid_name/Exports/localized, returns dst_file with the full dir plus "copy" skip flag
+        if it finds /vid_name/Exports/localized, returns dst_file with the full dir plus "copy" flag
         - - if above is found on Video_Localized then flag is "copy_zip" or "copy_zip_US" depending on directory - -
         if it doesn't find /vid_name anywhere, returns dst_file with no_copy_dir plus "not_found" skip flag
         '''
