@@ -19,7 +19,7 @@ class Spreadsheet(object):
 
     def __init__(self):
         self.country_columns = {
-            "AR": 5, "AU": 6, "BR": 7, "DE": 8, "FR": 9, "IT": 10, "MX": 11, "NL": 12, "PL": 13, "QC": 14, "RU": 15, "UK": 4
+            "AR": 5, "AU": 6, "BR": 7, "DE": 8, "FR": 9, "IT": 10, "MX": 11, "NL": 12, "PL": 13, "QC": 14, "RU": 15, "UK": 4, "US": 16
         }
 
     def _replace_chars(self, string):
@@ -113,9 +113,14 @@ class Copier(object):
         self.export_path = 'Exports/localizedVP9'
         self.stills_path = 'Stills'
         self.duplicates = {}
-        self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK"]
+        self.countries = ["AR", "AU", "BR", "DE", "FR", "IT", "MX", "NL", "PL", "QC", "RU", "UK", "US"]
         self.stats = {flags[i]: [] for i in range(len(flags))}
-        self.dropbox_paths = {country: os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}'.format(country)) for country in self.countries}
+        self.dropbox_paths = {
+            country: {
+                'recipe': os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}/recipe/'.format(country)),
+                'social': os.path.join('/Volumes/Video HD Raid 5/Dropbox (Meredith)/by_country/{}/social/'.format(country))
+            }  for country in self.countries
+        }
 
         self.stills_paths = {
             'square': [
@@ -157,6 +162,7 @@ class Copier(object):
             "PL": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/PL",
             "RU": "/Volumes/public/International/Editorial/Video/Videos by country/RU/_New videos",
             "UK": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/UK",
+            "US": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/FY18 INT VIDEO CUTS/Cuts/Approved Final Cuts/ON-SITE"
         }
 
     def _copy_stills(self, vid_name, archive_path):
@@ -199,12 +205,14 @@ class Copier(object):
 
         print('\n')
 
-    def _copy_dropbox(self, country, file_name, src_file):
-        drop = os.path.join(self.dropbox_paths[country], file_name)
+    def _copy_dropbox(self, social, country, file_name, src_file):
+        drop_path = self.dropbox_paths['social'][country] if social else self.dropbox_paths['recipe'][country]
+        drop = os.path.join(drop_path, file_name)
 
         if os.path.exists(drop):
             print("removing old {} from dropbox country folder...".format(file_name))
             os.remove(drop)
+
         print("copying new {} to dropbox country folder...".format(file_name))
         shutil.copy2(src_file, drop)
 
