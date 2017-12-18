@@ -162,7 +162,10 @@ class Copier(object):
             "PL": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/PL",
             "RU": "/Volumes/public/International/Editorial/Video/Videos by country/RU/_New videos",
             "UK": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/UK",
-            "US": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/FY18 INT VIDEO CUTS/Cuts/Approved Final Cuts/ON-SITE"
+            "US": {
+                "recipe": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/FY18 INT VIDEO CUTS/Approved Cuts/ON-SITE",
+                "social": "/Volumes/Video HD Raid 5/Dropbox (Meredith)/FY18 INT VIDEO CUTS/For Review/Social/"
+            }
         }
 
     def _copy_stills(self, vid_name, archive_path):
@@ -321,11 +324,13 @@ class Copier(object):
 
             return dst_file, backup_src, flag
 
-    def find_country_path(self, country, file_name):
-        if country in self.countries:
-            dst_file = os.path.join(self.country_paths[country], file_name)
-
-            return dst_file
+    def find_country_path(self, country, social, file_name):
+        if country is "US" and social:
+            return os.path.join(self.country_paths[country]['social'], file_name)
+        elif country is "US":
+            return os.path.join(self.country_paths[country]['recipe'], file_name)
+        else:
+            return os.path.join(self.country_paths[country], file_name)
 
     def copy(self, vid_name, country, social, file_name, src_file, archive_path, backup_src, flag, country_path):
 
@@ -411,7 +416,7 @@ if __name__ == '__main__':
         social = copier.vid_dict[key][2]
         src_file = copier.vid_dict[key][3]
         archive_path, backup_src, flag = copier.find_archive_path(vid_name, file_name)
-        country_path = copier.find_country_path(country, file_name)
+        country_path = copier.find_country_path(country, social, file_name)
 
         # if two videos from same directory are being copied and video is in archive
         # don't create archive until last video has been copied (set backup_src to None)
