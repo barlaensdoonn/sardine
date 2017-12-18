@@ -345,7 +345,7 @@ class Copier(object):
             print("copying new {} to country folder...".format(file_name))
             shutil.copy2(src_file, country_path)
 
-            self._copy_dropbox(country, file_name, src_file)
+            self._copy_dropbox(social, country, file_name, src_file)
 
             if social:
                 print("moving {} to copied folder\n".format(file_name))
