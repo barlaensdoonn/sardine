@@ -209,7 +209,7 @@ class Copier(object):
         print('\n')
 
     def _copy_dropbox(self, social, country, file_name, src_file):
-        drop_path = self.dropbox_paths[country]['social'] if social else self.dropbox_paths['recipe'][country]
+        drop_path = self.dropbox_paths[country]['social'] if social else self.dropbox_paths[country]['recipe']
         drop = os.path.join(drop_path, file_name)
 
         if os.path.exists(drop):
