@@ -325,9 +325,9 @@ class Copier(object):
             return dst_file, backup_src, flag
 
     def find_country_path(self, country, social, file_name):
-        if country is "US" and social:
+        if country == "US" and social:
             return os.path.join(self.country_paths[country]['social'], file_name)
-        elif country is "US":
+        elif country == "US":
             return os.path.join(self.country_paths[country]['recipe'], file_name)
         else:
             return os.path.join(self.country_paths[country], file_name)
