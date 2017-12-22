@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # gspread archiver
 # 5/19/16
-# updated 11/12/17
+# updated 12/21/17
 
 import os
 import shutil
@@ -61,8 +61,8 @@ def get_localized(spreadsheet):
 
     for x in range(spreadsheet.row_count):
         row_value = spreadsheet.row_values(x + 1)
-        # only look at UK, AU, and QC columns in spreadsheet
-        row_value_set = set([row_value[i] for i in [3, 5, 13]])
+        # only look at UK, AU, QC, and US columns in spreadsheet
+        row_value_set = set([row_value[i] for i in [3, 5, 13, 15]])
         if row_value_set in localized_sets:
             name = replace_chars(row_value[0])
             localized_videos[name] = x + 1
