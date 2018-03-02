@@ -10,7 +10,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from windy_paths import spread_cred
 
 
-localized_sets = [{'X'}, {'S,X'}, {'S', 'S,X'}, {'X', 'S,X'}, {'X', 'N/A'}, {'S', 'N/A'}, {'S/X', 'N/A'}, {'S/X', 'N/A,X'}, {'X', 'S,X', 'N/A'}, {'X', 'S/X', 'N/A'}]
+localized_sets = [{'X'}, {'S,X'}, {'S', 'S,X'}, {'X', 'S,X'}, {'X', 'N/A'}, {'S', 'N/A'}, {'S,X', 'N/A'}, {'S,X', 'N/A,X'}, {'X', 'S,X', 'N/A'}, {'X', 'S,X', 'N/A'}]
 
 source_paths = {
     "US_videos": "/Volumes/Video HD Raid 5/AR US Videos ",
