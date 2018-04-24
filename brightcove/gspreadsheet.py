@@ -36,7 +36,7 @@ class Spreadsheet(object):
         return None if neither found
         '''
         self.logger.info('authenticating to Google Sheets...')
-        scope = ['https://spreadsheets.google.com/feeds']
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
         if os.path.isfile(bright_brick_road.spread_cred):
             credentials = ServiceAccountCredentials.from_json_keyfile_name(bright_brick_road.spread_cred, scope)
