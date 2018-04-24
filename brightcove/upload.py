@@ -380,7 +380,7 @@ class Brightcove(object):
             'master': {
                 'url': '{}'.format(video.urls['ingest']['video'])
             },
-            'profile': 'videocloud-default-v1',
+            'profile': 'multi-platform-standard-dynamic',
         }
 
         for word in ['poster', 'thumbnail']:
