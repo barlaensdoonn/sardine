@@ -1,11 +1,11 @@
 #!/usr/local/bin/python3
 # combined file copier
 # 5/16/16
-# updated: 11/12/17
+# updated: 4/24/18
 
-import gspread
 import os
 import shutil
+import gspread
 import traceback
 from oauth2client.service_account import ServiceAccountCredentials
 import windy_paths
@@ -52,7 +52,7 @@ class Spreadsheet(object):
         '''
         print('authenticating to Google Sheets...\n')
 
-        scope = ['https://spreadsheets.google.com/feeds']
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         credentials = ServiceAccountCredentials.from_json_keyfile_name(windy_paths.spread_cred, scope)
 
         gc = gspread.authorize(credentials)
