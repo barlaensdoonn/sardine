@@ -2,7 +2,9 @@
 # 5/21/18
 # updated 5/22/18
 
+import sys
 import json
+from time import sleep
 from caas_content_client_python_3 import client
 from caas_keys import CAAS_API_PROD_KEY_BRANDON
 
@@ -10,7 +12,7 @@ from caas_keys import CAAS_API_PROD_KEY_BRANDON
 elastic_search_request = {
     'size': 25,
     'from': 0,
-    'query': {'match': {'_all': 'hair'}},
+    'query': {'match': {'_all': 'hhistry'}},
     'sort': [{'$date': {'unmapped_type': 'long', 'order': 'desc'}}]
 }
 
@@ -18,6 +20,17 @@ elastic_search_request = {
 def _extract_json(json_path):
     with open(json_path) as conf:
         return json.load(conf)
+
+
+def _parse_query_response(query_data):
+    print('query returned {} results'.format(query_data['found']))
+    return query_data['entities'] if query_data['found'] else None
+
+
+def _loop_thru_response(data):
+    '''loop through response data until we reach the end'''
+    if len(data['entities'] < elastic_search_request['size']):
+        pass
 
 
 def initialize_client(env='prod'):
@@ -47,15 +60,28 @@ def construct_search_params(elastic_search_request, query_config_path='query_con
     return search_params
 
 
-# looping through pages, stopping at the end:
-if len(data['entities'] < elastic_search_request['size']):
-    pass
+def search(search_params):
+    try:
+        response = caas_client.search(search_params)
+    except Exception:
+        print('something went wrong...')
+        print('reraising the exception so we can look at the stack trace')
+        sleep(2)
+        raise
+
+    if response.status_code == 200:
+        return _parse_query_response(response.json())
+    else:
+        print('query failed with response code {}'.format(response.status_code))
+        print('raising the error so we can look at it')
+        response.raise_for_status()
 
 
 if __name__ == '__main__':
     caas_client = initialize_client()
     search_params = construct_search_params(elastic_search_request)
+    response = search(search_params)
 
-    response = caas_client.search(search_params)
-    data = response.json()
-    data['entities'][0]  # first result returned from the query
+    if not response:
+        print('exiting...')
+        sys.exit()
