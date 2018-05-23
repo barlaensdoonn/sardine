@@ -4,20 +4,7 @@
 
 import json
 from caas_content_client_python_3 import client
-
-
-def get_client_config(config_path='caas_client_config.json'):
-    with open(config_path) as confp:
-        return json.load(confp)
-
-
-def initialize_client(config, env='prod'):
-    """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
-
-    caas_client = client.EntityServiceClient('prod')
-    caas_client.x_api_key = config['CAAS_API_PROD_KEY']  # specify our API key for the client
-
-    return caas_client
+from caas_keys import CAAS_API_PROD_KEY_BRANDON
 
 
 elastic_search_request = {
@@ -27,10 +14,37 @@ elastic_search_request = {
     'sort': [{'$date': {'unmapped_type': 'long', 'order': 'desc'}}]
 }
 
-search_params = {
-    'elasticsearchRequest': elastic_search_request,
-    'type': 'web_article'
-}
+
+def _extract_json(json_path):
+    with open(json_path) as conf:
+        return json.load(conf)
+
+
+def initialize_client(env='prod'):
+    """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
+
+    caas_client = client.EntityServiceClient(env)
+    caas_client.x_api_key = CAAS_API_PROD_KEY_BRANDON  # specify our API key for the client
+
+    return caas_client
+
+
+def construct_search_params(elastic_search_request, query_config_path='query_config.json'):
+    '''
+    query_config.json holds all search parameters other than the elasticsearch request.
+    these params are: 'type', 'provider', 'follow', and 'fields'
+    refer to the CaaS API documentation for an explanation of these:
+    http://docs-caas.timeincapp.com/#search-and-get-examples
+
+    these are available in case they're needed, but everything will probably
+    remain static, with the exception of 'provider' which can narrow a search
+    to a single brand.
+    '''
+    query_config = _extract_json(query_config_path)
+    search_params = {key: value for key, value in query_config.items()}
+    search_params['elasticsearchRequest'] = elastic_search_request
+
+    return search_params
 
 
 # looping through pages, stopping at the end:
@@ -39,8 +53,8 @@ if len(data['entities'] < elastic_search_request['size']):
 
 
 if __name__ == '__main__':
-    client_config = get_client_config()
     caas_client = initialize_client()
+    search_params = construct_search_params(elastic_search_request)
 
     response = caas_client.search(search_params)
     data = response.json()
