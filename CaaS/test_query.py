@@ -12,7 +12,7 @@ from caas_keys import CAAS_API_PROD_KEY_BRANDON
 elastic_search_request = {
     'size': 25,
     'from': 0,
-    'query': {'match': {'_all': 'hhistry'}},
+    'query': {'match': {'_all': 'hair'}},
     'sort': [{'$date': {'unmapped_type': 'long', 'order': 'desc'}}]
 }
 
@@ -29,6 +29,7 @@ def _parse_query_response(query_data):
 
 def _loop_thru_response(data):
     '''loop through response data until we reach the end'''
+
     if len(data['entities'] < elastic_search_request['size']):
         pass
 
@@ -42,7 +43,7 @@ def initialize_client(env='prod'):
     return caas_client
 
 
-def construct_search_params(elastic_search_request, query_config_path='query_config.json'):
+def construct_search_params(elastic_path='elastic_search_request.json', query_config_path='query_config.json'):
     '''
     query_config.json holds all search parameters other than the elasticsearch request.
     these params are: 'type', 'provider', 'follow', and 'fields'
@@ -52,8 +53,14 @@ def construct_search_params(elastic_search_request, query_config_path='query_con
     these are available in case they're needed, but everything will probably
     remain static, with the exception of 'provider' which can narrow a search
     to a single brand.
+
+    the thing that will change most often is the elastic_search_request.
+    paste your request into the file 'elastic_search_request.json'
+    the content to paste can be found by searching search.timeinc.com, then
+    clicking on the "Advanced" tab and pasting the code from there verbatim.
     '''
     query_config = _extract_json(query_config_path)
+    elastic_search_request = _extract_json(elastic_path)
     search_params = {key: value for key, value in query_config.items()}
     search_params['elasticsearchRequest'] = elastic_search_request
 
@@ -79,7 +86,7 @@ def search(search_params):
 
 if __name__ == '__main__':
     caas_client = initialize_client()
-    search_params = construct_search_params(elastic_search_request)
+    search_params = construct_search_params()
     response = search(search_params)
 
     if not response:
