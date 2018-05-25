@@ -1,1 +1,3 @@
 caas_keys.py
+*.pyc
+__pycache__/
