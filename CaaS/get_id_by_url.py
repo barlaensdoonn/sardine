@@ -24,6 +24,7 @@ elastic_search_request = {
 
 
 def get_column_values(worksheet, column_name):
+    '''get values from a specific column in a google spreadsheet'''
     title_cell = worksheet.find(column_name)
     column = title_cell.col
 
