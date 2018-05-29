@@ -1,18 +1,14 @@
 #!/usr/local/bin/python3
 # get CaaS conent ID by URL
 # 5/25/18
-# updated 5/25/18
+# updated 5/29/18
 
-import sys
 import time
 import gspreadsheet
 from test_query import CaasClient
 
 
-path_to_caas_client = '/Users/kestrel/gitBucket/caas-content-client-python-3'
-sys.path.insert(0, path_to_caas_client)
-
-
+# example elastic search request from caas client documentation for finding content by url
 elastic_search_request = {
     'size': 50,
     'query': {

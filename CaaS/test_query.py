@@ -1,15 +1,15 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 5/25/18
+# updated 5/29/18
 
 import sys
 import json
 from time import sleep
-from caas_keys import CAAS_API_PROD_KEY_BRANDON
+import caas_keys
 
-path_to_caas_module = '/Users/kestrel/gitBucket/caas-content-client-python-3'
-sys.path.insert(0, path_to_caas_module)
+# add the caas python 3 client to our path so the script can use it
+sys.path.insert(0, caas_keys.path_to_caas_module_office)
 from caas_content_client_python_3 import client
 
 
@@ -44,7 +44,7 @@ class CaasClient:
     def _init_client(self, env='prod'):
         """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
         caas_client = client.EntityServiceClient(env)
-        caas_client.x_api_key = CAAS_API_PROD_KEY_BRANDON  # specify our API key for the client
+        caas_client.x_api_key = caas_keys.CAAS_API_PROD_KEY_BRANDON  # specify our API key for the client
 
         return caas_client
 
