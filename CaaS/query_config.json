@@ -1,6 +1,6 @@
 {
     "type": "web_article",
-    "provider": "",
+    "provider": "_all",
     "follow": [],
     "fields": ""
 }
