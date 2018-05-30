@@ -9,7 +9,7 @@ from time import sleep
 import caas_keys
 
 # add the caas python 3 client to our path so the script can use it
-sys.path.insert(0, caas_keys.path_to_caas_module_office)
+sys.path.insert(0, caas_keys.path_to_caas_module_home)
 from caas_content_client_python_3 import client
 
 
@@ -74,8 +74,14 @@ class CaasClient:
 
         return search_params
 
-    def search(self, search_params):
+    def search(self, elastic_request=None):
+        '''
+        if a specific elastic request is passed in here, it will be forwarded to
+        construct_search_params. otherwise construct_search_params uses
+        elastic_search_request.json to construct the parameters
+        '''
         try:
+            search_params = self.construct_search_params(elastic_request=elastic_request)
             response = self.client.search(search_params)
         except Exception:
             print('something went wrong...')
