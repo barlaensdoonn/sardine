@@ -5,6 +5,7 @@
 
 import time
 import gspreadsheet
+from collections import Counter
 from test_query import CaasClient
 
 
@@ -47,33 +48,32 @@ if __name__ == '__main__':
                           'https://www.fitnessmagazine.com/', 'https://www.shape.com/']
     caas_client = CaasClient()
     g = gspreadsheet.Gsheet()
-    urls_searched = 0
-    urls_found = 0
     url_sources = {}
+    search_totals = Counter()
 
     sheet_title = 'Hair Classification Training Corpus'
     hair = g.get_spreadsheet(title=sheet_title)
     content = g.get_worksheet(hair, 'Terms/Content')
-
     sources = get_column_values(content, 'Content Site/Source')
     urls = get_column_values(content, 'Content URL')
 
     for entry in zip(sources, urls):
         if entry[1].startswith('http'):
-            for brand in brands_not_in_caas:
-                if brand in entry:
-                    continue  # skip brands that are not currently in CaaS
+            source = entry[0]
+            url = entry[1]
 
-                source = entry[0]
-                url_sources = update_sources(url_sources, source)
+            # skip brands that are not currently in CaaS
+            if source in brands_not_in_caas:
+                continue
 
-                url = entry[1]
-                urls_searched += 1
-                print('\nsearching for {}'.format(url))
-                elastic_search_request['query']['constant_score']['filter']['term']['web_article_url.raw'] = url
-                response = caas_client.search(elastic_request=elastic_search_request)
+            url_sources = update_sources(url_sources, source)
+            search_totals['searched'] += 1
 
-                if response:
-                    urls_found += 1
-                    url_sources[source]['found'] += 1
-                time.sleep(0.1)
+            print('\nsearching for {}'.format(url))
+            elastic_search_request["query"]["constant_score"]["filter"]["term"]["web_article_url.raw"] = url
+            response = caas_client.search(elastic_request=elastic_search_request)
+
+            if response:
+                url_sources[source]['found'] += 1
+                search_totals['found'] += 1
+            time.sleep(0.01)
