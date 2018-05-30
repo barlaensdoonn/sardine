@@ -31,7 +31,20 @@ def get_column_values(worksheet, column_name):
     return worksheet.col_values(column)
 
 
+def update_sources(source_dict, source):
+    if source not in url_sources.keys():
+        source_dict[source] = {
+            'searched': 0,
+            'found': 0
+        }
+
+    source_dict[source]['searched'] += 1
+    return source_dict
+
+
 if __name__ == '__main__':
+    brands_not_in_caas = ['http://www.bhg.com/', 'https://www.marthastewart.com',
+                          'https://www.fitnessmagazine.com/', 'https://www.shape.com/']
     caas_client = CaasClient()
     g = gspreadsheet.Gsheet()
     urls_searched = 0
@@ -47,21 +60,20 @@ if __name__ == '__main__':
 
     for entry in zip(sources, urls):
         if entry[1].startswith('http'):
-            source = entry[0]
-            if source not in url_sources.keys():
-                url_sources[source] = {
-                    'searched': 0,
-                    'found': 0
-                }
+            for brand in brands_not_in_caas:
+                if brand in entry:
+                    continue  # skip brands that are not currently in CaaS
 
-            url = entry[1]
-            urls_searched += 1
-            url_sources[source]['searched'] += 1
+                source = entry[0]
+                url_sources = update_sources(url_sources, source)
 
-            print('\nsearching for {}'.format(url))
-            elastic_search_request['query']['constant_score']['filter']['term']['web_article_url.raw'] = url
-            response = caas_client.search(caas_client.construct_search_params(elastic_request=elastic_search_request))
-            if response:
-                urls_found += 1
-                url_sources[source]['found'] += 1
-            time.sleep(0.1)
+                url = entry[1]
+                urls_searched += 1
+                print('\nsearching for {}'.format(url))
+                elastic_search_request['query']['constant_score']['filter']['term']['web_article_url.raw'] = url
+                response = caas_client.search(elastic_request=elastic_search_request)
+
+                if response:
+                    urls_found += 1
+                    url_sources[source]['found'] += 1
+                time.sleep(0.1)
