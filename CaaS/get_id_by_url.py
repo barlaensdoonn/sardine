@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 # get CaaS conent ID by URL
 # 5/25/18
-# updated 5/29/18
+# updated 5/30/18
 
 import time
 import gspreadsheet
@@ -10,12 +10,12 @@ from test_query import CaasClient
 
 # example elastic search request from caas client documentation for finding content by url
 elastic_search_request = {
-    'size': 50,
-    'query': {
-        'constant_score': {
-            'filter': {
-                'term': {
-                    'web_article_url.raw': 'http://www.instyle.com/hair/find-best-hair-color-your-skin-tone'
+    "size": 50,
+    "query": {
+        "constant_score": {
+            "filter": {
+                "term": {
+                    "web_article_url.raw": "http://www.instyle.com/hair/find-best-hair-color-your-skin-tone"
                 }
             }
         }
