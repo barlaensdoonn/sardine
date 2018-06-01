@@ -1,4 +1,4 @@
-# attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
+# wrapper for legacy Time Inc's python 3 CaaS client hosted here:
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
 # updated 6/1/18
@@ -6,7 +6,7 @@
 import sys
 import json
 from time import sleep
-import caas_keys
+from . import caas_keys
 
 # add the caas python 3 client to our path so the script can use it
 sys.path.insert(0, caas_keys.path_to_caas_module_home)
@@ -21,13 +21,23 @@ example_elastic_search_request = {
 }
 
 
-class CaasClient:
+class CaaSClient:
+    '''
+    wrapper for legacy Time Inc's python3 CaaS client. main use is to query the
+    CaaS datastore. the search() method constructs its search from the files
+    specified by elastic_path and query_config_path. these paths should be passed
+    in when constructing a CaaSClient instance unless you're using it from its directory
+
+    check the docstrings for construct_search_params() and search() methods for more info
+    '''
 
     elastic_path = '../config/elastic_search_request.json'
     query_config_path = '../config/query_config.json'
 
-    def __init__(self):
+    def __init__(self, elastic_path=elastic_path, query_config_path=query_config_path):
         self.client = self._init_client()
+        self.elastic_path = elastic_path
+        self.query_config_path = query_config_path
 
     def _extract_json(self, json_path):
         '''utility function to extract json from a file'''
@@ -51,7 +61,7 @@ class CaasClient:
 
         return caas_client
 
-    def construct_search_params(self, elastic_request=None, elastic_path=elastic_path, query_config_path=query_config_path):
+    def construct_search_params(self, elastic_request=None):
         '''
         query_config.json holds all search parameters other than the elasticsearch
         request. these params are: 'type', 'provider', 'follow', and 'fields'
@@ -70,8 +80,8 @@ class CaasClient:
         alternatively you can pass in an elasticsearch request as a python object.
         this is mainly used for debugging.
         '''
-        query_config = self._extract_json(query_config_path)
-        elastic_search_request = elastic_request if elastic_request else self._extract_json(elastic_path)
+        query_config = self._extract_json(self.query_config_path)
+        elastic_search_request = elastic_request if elastic_request else self._extract_json(self.elastic_path)
         search_params = {key: value for key, value in query_config.items()}
         search_params['elasticsearchRequest'] = elastic_search_request
 
