@@ -16,6 +16,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 class Gsheet(object):
     '''methods for interacting with Google Drive spreadsheets'''
 
+    log_file = 'gspreadsheet.log'
     credents = caas_keys.spread_cred
     home_credents = caas_keys.spread_cred_home
 
@@ -31,7 +32,7 @@ class Gsheet(object):
         with open('log.yaml', 'r') as log_conf:
             log_config = yaml.safe_load(log_conf)
 
-        log_config['handlers']['file']['filename'] = 'gspreadsheet.log'
+        log_config['handlers']['file']['filename'] = self.log_file
         logging.config.dictConfig(log_config)
         logging.info('* * * * * * * * * * * * * * * * * * * *')
         logging.info('logging configured in gspreadsheet.py')

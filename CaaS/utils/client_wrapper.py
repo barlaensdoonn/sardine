@@ -4,9 +4,17 @@
 # updated 6/1/18
 
 import sys
+import yaml
 import json
+import logging
+import logging.config
 from time import sleep
-from . import caas_keys
+
+try:
+    from . import caas_keys
+except ImportError:
+    import caas_keys
+
 
 # add the caas python 3 client to our path so the script can use it
 sys.path.insert(0, caas_keys.path_to_caas_module_home)
@@ -31,14 +39,27 @@ class CaaSClient:
     check the docstrings for construct_search_params() and search() methods for more info
     '''
 
+    log_file = 'caas_client.log'
     elastic_path = '../config/elastic_search_request.json'
     query_config_path = '../config/query_config.json'
 
-    def __init__(self, elastic_path=elastic_path, query_config_path=query_config_path):
+    def __init__(self, elastic_path=elastic_path, query_config_path=query_config_path, logger=None):
+        self.logger = logger if logger else self._init_logger()
         self.client = self._init_client()
         self.elastic_path = elastic_path
         self.elastic_request = None
         self.query_config_path = query_config_path
+
+    def _init_logger(self):
+        with open('log.yaml', 'r') as log_conf:
+            log_config = yaml.safe_load(log_conf)
+
+        log_config['handlers']['file']['filename'] = self.log_file
+        logging.config.dictConfig(log_config)
+        logging.info('* * * * * * * * * * * * * * * * * * * *')
+        logging.info('logging configured in client_wrapper.py')
+
+        return logging.getLogger('caas_client')
 
     def _extract_json(self, json_path):
         '''utility function to extract json from a file'''
@@ -47,7 +68,7 @@ class CaaSClient:
 
     def _parse_query_response(self, query_data):
         '''return the entities from a successful query, otherwise return None'''
-        print('query returned {} results'.format(query_data['found']))
+        self.logger.info('query returned {} results'.format(query_data['found']))
         return query_data['entities'] if query_data['found'] else None
 
     def _loop_thru_response(self, data):
@@ -96,7 +117,7 @@ class CaaSClient:
         '''
         tries = 5
         success = False
-        print('querying CaaS...')
+        self.logger.info('querying CaaS...')
 
         while not success and tries:
             try:
@@ -105,19 +126,19 @@ class CaaSClient:
                 success = True
             except KeyError:
                 tries -= 1
-                print("query response doesn't have the expected keys")
-                print('retrying search...')
+                self.logger.warning("query response doesn't have the expected keys")
+                self.logger.warning('retrying search...')
             except Exception:
-                print('something went wrong...')
-                print('reraising the exception so we can look at the stack trace')
+                self.logger.error('something went wrong...')
+                self.logger.error('reraising the exception so we can look at the stack trace')
                 sleep(1)
                 raise
 
         if response.status_code == 200:
             return self._parse_query_response(response.json())
         else:
-            print('query failed with response code {}'.format(response.status_code))
-            print('raising the error so we can look at it')
+            self.logger.error('query failed with response code {}'.format(response.status_code))
+            self.logger.error('raising the error so we can look at it')
             response.raise_for_status()
 
 
@@ -127,5 +148,5 @@ if __name__ == '__main__':
     response = caas_client.search()
 
     if not response:
-        print('exiting...')
+        caas_client.logger.info('exiting...')
         sys.exit()

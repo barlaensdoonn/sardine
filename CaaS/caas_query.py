@@ -17,10 +17,32 @@ clicking on the "Advanced" tab and pasting the code from there verbatim.
 import os
 import sys
 import csv
+import yaml
+import logging
+import logging.config
 from utils import client_wrapper
 
 elastic_path = 'config/elastic_search_request.json'
 query_config_path = 'config/query_config.json'
+log_file = 'query.log'
+
+
+def _initialize_logger(name):
+    logger = logging.getLogger(name)
+    logger.info('{} logger instantiated'.format(name))
+    return logger
+
+
+def configure_logger():
+    with open('utils/log.yaml', 'r') as log_conf:
+        log_config = yaml.safe_load(log_conf)
+
+    log_config['handlers']['file']['filename'] = log_file
+    logging.config.dictConfig(log_config)
+    logging.info('* * * * * * * * * * * * * * * * * * * *')
+    logging.info('logging configured')
+
+    return _initialize_logger('query')
 
 
 def _check_file(output):
@@ -62,8 +84,10 @@ def extract_info(entry):
 
 
 if __name__ == '__main__':
-    caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path, query_config_path=query_config_path)
+    logger = configure_logger()
+    caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path, query_config_path=query_config_path, logger=_initialize_logger('caas_client'))
     output_file = capture_args()
 
     response = caas_client.search()
     rsp = response[0]
+    print(rsp['pronto'])
