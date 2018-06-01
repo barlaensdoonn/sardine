@@ -112,7 +112,7 @@ class CaaSClient:
 
 if __name__ == '__main__':
     # execute search specified in elastic_search_request.json
-    caas_client = CaasClient()
+    caas_client = CaaSClient()
     response = caas_client.search()
 
     if not response:
