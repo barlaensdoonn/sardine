@@ -37,6 +37,7 @@ class CaaSClient:
     def __init__(self, elastic_path=elastic_path, query_config_path=query_config_path):
         self.client = self._init_client()
         self.elastic_path = elastic_path
+        self.elastic_request = None
         self.query_config_path = query_config_path
 
     def _extract_json(self, json_path):
@@ -81,9 +82,9 @@ class CaaSClient:
         this is mainly used for debugging.
         '''
         query_config = self._extract_json(self.query_config_path)
-        elastic_search_request = elastic_request if elastic_request else self._extract_json(self.elastic_path)
+        self.elastic_request = elastic_request if elastic_request else self._extract_json(self.elastic_path)
         search_params = {key: value for key, value in query_config.items()}
-        search_params['elasticsearchRequest'] = elastic_search_request
+        search_params['elasticsearchRequest'] = self.elastic_request
 
         return search_params
 
@@ -93,14 +94,24 @@ class CaaSClient:
         construct_search_params. otherwise construct_search_params uses
         elastic_search_request.json to construct the parameters
         '''
-        try:
-            search_params = self.construct_search_params(elastic_request=elastic_request)
-            response = self.client.search(search_params)
-        except Exception:
-            print('something went wrong...')
-            print('reraising the exception so we can look at the stack trace')
-            sleep(2)
-            raise
+        tries = 5
+        success = False
+        print('querying CaaS...')
+
+        while not success and tries:
+            try:
+                search_params = self.construct_search_params(elastic_request=elastic_request)
+                response = self.client.search(search_params)
+                success = True
+            except KeyError:
+                tries -= 1
+                print("query response doesn't have the expected keys")
+                print('retrying search...')
+            except Exception:
+                print('something went wrong...')
+                print('reraising the exception so we can look at the stack trace')
+                sleep(1)
+                raise
 
         if response.status_code == 200:
             return self._parse_query_response(response.json())
