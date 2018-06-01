@@ -6,7 +6,7 @@
 import sys
 import json
 from time import sleep
-from misc import caas_keys
+import caas_keys
 
 # add the caas python 3 client to our path so the script can use it
 sys.path.insert(0, caas_keys.path_to_caas_module_home)
@@ -23,8 +23,8 @@ example_elastic_search_request = {
 
 class CaasClient:
 
-    elastic_path = 'config/elastic_search_request.json'
-    query_config_path = 'config/query_config.json'
+    elastic_path = '../config/elastic_search_request.json'
+    query_config_path = '../config/query_config.json'
 
     def __init__(self):
         self.client = self._init_client()
