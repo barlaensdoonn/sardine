@@ -43,6 +43,10 @@ def update_sources(source_dict, source):
     return source_dict
 
 
+def _get_cell_value(row, column_key):
+    return content.cell(row, columns[column_key]).value
+
+
 def _parse_ids(ids, response, key):
     '''
     type(ids) == set
@@ -73,7 +77,7 @@ def update_sheet(cms_ids, caas_ids, response):
 
 
 if __name__ == '__main__':
-    Row = namedtuple('Row', ['source', 'url'])
+    Row = namedtuple('Row', ['source', 'caas_id', 'cms_id', 'url'])
     columns = {
         'source': 1,
         'caas_id': 2,
@@ -94,29 +98,33 @@ if __name__ == '__main__':
 
     # iterate through the worksheet's rows
     for i in range(1, content.row_count + 1):
-        row = Row(source=content.cell(i, columns['source']).value, url=content.cell(i, columns['url']).value)
-        if row.url.startswith('http'):
-            # skip brands that are not currently in CaaS
-            if row.source in brands_not_in_caas:
-                continue
+        row = Row(source=_get_cell_value(i, 'source'), caas_id=_get_cell_value(i, 'caas_id'),
+                  cms_id=_get_cell_value(i, 'cms_id'), url=_get_cell_value(i, 'url'))
 
-            url_sources = update_sources(url_sources, row.source)
-            search_totals['searched'] += 1
+        #  don't search for ids we've already found
+        if not row.caas_id or not row.cms_id:
+            if row.url.startswith('http'):
+                # skip brands that are not currently in CaaS
+                if row.source in brands_not_in_caas:
+                    continue
 
-            print('\nsearching for {}'.format(row.url))
-            elastic_search_request["query"]["constant_score"]["filter"]["term"]["web_article_url.raw"] = row.url
-            response = caas_client.search(elastic_request=elastic_search_request)
+                url_sources = update_sources(url_sources, row.source)
+                search_totals['searched'] += 1
 
-            if response:
-                url_sources[row.source]['found'] += 1
-                search_totals['found'] += 1
+                print('\nsearching for {}'.format(row.url))
+                elastic_search_request["query"]["constant_score"]["filter"]["term"]["web_article_url.raw"] = row.url
+                response = caas_client.search(elastic_request=elastic_search_request)
 
-                # make a set of the cms id's from the entities in the response
-                cms_ids = get_cms_ids(response)
-                caas_ids = get_caas_ids(response)
-                update_sheet(cms_ids, caas_ids, response)
+                if response:
+                    url_sources[row.source]['found'] += 1
+                    search_totals['found'] += 1
 
-            sleep(0.01)
+                    # make a set of the cms id's from the entities in the response
+                    cms_ids = get_cms_ids(response)
+                    caas_ids = get_caas_ids(response)
+                    update_sheet(cms_ids, caas_ids, response)
+
+                sleep(0.1)
 
     print(url_sources)
     print(search_totals)
