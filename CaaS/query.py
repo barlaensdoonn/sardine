@@ -1,12 +1,12 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 5/29/18
+# updated 6/1/18
 
 import sys
 import json
 from time import sleep
-import caas_keys
+from misc import caas_keys
 
 # add the caas python 3 client to our path so the script can use it
 sys.path.insert(0, caas_keys.path_to_caas_module_home)
@@ -14,14 +14,17 @@ from caas_content_client_python_3 import client
 
 
 example_elastic_search_request = {
-    'size': 25,
-    'from': 0,
-    'query': {'match': {'_all': 'hair'}},
-    'sort': [{'$date': {'unmapped_type': 'long', 'order': 'desc'}}]
+    "size": 25,
+    "from": 0,
+    "query": {"match": {"_all": "hair"}},
+    "sort": [{"$date": {"unmapped_type": "long", "order": "desc"}}]
 }
 
 
 class CaasClient:
+
+    elastic_path = 'config/elastic_search_request.json'
+    query_config_path = 'config/query_config.json'
 
     def __init__(self):
         self.client = self._init_client()
@@ -48,7 +51,7 @@ class CaasClient:
 
         return caas_client
 
-    def construct_search_params(self, elastic_request=None, elastic_path='elastic_search_request.json', query_config_path='query_config.json'):
+    def construct_search_params(self, elastic_request=None, elastic_path=elastic_path, query_config_path=query_config_path):
         '''
         query_config.json holds all search parameters other than the elasticsearch
         request. these params are: 'type', 'provider', 'follow', and 'fields'
@@ -99,8 +102,9 @@ class CaasClient:
 
 if __name__ == '__main__':
     caas_client = CaasClient()
-    search_params = caas_client.construct_search_params()
-    response = caas_client.search(search_params)
+
+    # execute search specified in elastic_search_request.json
+    response = caas_client.search()
 
     if not response:
         print('exiting...')
