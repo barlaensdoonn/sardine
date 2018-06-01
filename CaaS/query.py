@@ -48,11 +48,22 @@ def capture_args():
         return _check_file(output)
 
 
+def extract_info(entry):
+    # non-pronto data
+    caas_id = rsp['$']['id']
+    taxonomy = rsp['si']['taxonomy']['tags']
+    type = rsp['$type'][0]['$id'].split('/')[1]
+    url = rsp['web_article_url']
+    url_alt = rsp['asset_url']
+    title = rsp['$name']
+
+    # pronto data
+    pronto_data = rsp['pronto']
+
+
 if __name__ == '__main__':
     caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path, query_config_path=query_config_path)
     output_file = capture_args()
 
-    if output_file:
-        print(output_file)
-    else:
-        print('no output file specified')
+    response = caas_client.search()
+    rsp = response[0]
