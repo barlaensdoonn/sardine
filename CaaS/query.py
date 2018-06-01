@@ -23,18 +23,36 @@ elastic_path = 'config/elastic_search_request.json'
 query_config_path = 'config/query_config.json'
 
 
+def _check_file(output):
+    '''confirm overwrite of an existing file'''
+    if os.path.isfile(output):
+        print('the specified output file already exists, do you want to overwrite it?')
+        overwrite = input('y/n: ').lower()
+        return output if overwrite.lower().startswith('y') else None
+    else:
+        return output
+
+
 def capture_args():
     '''
-    capture any arguments supplied to the script on the command line and
-    return the output file path if supplied
+    capture any arguments supplied to the script on the command line. if an output
+    file is specified, check if it already exists and confirm overwrite if it does
     '''
     if len(sys.argv) > 2:
         print('too many arguments')
         print('usage: python3 query.py output_file.csv')
         raise SystemExit('output_file.csv is optional')
     elif len(sys.argv) == 2:
-        output_file = sys.argv[1]
+        output = sys.argv[1]
+        output = os.path.join('output', output)
+        return _check_file(output)
 
 
 if __name__ == '__main__':
-    client = client_wrapper.CaaSClient(elastic_path=elastic_path, query_config_path=query_config_path)
+    caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path, query_config_path=query_config_path)
+    output_file = capture_args()
+
+    if output_file:
+        print(output_file)
+    else:
+        print('no output file specified')
