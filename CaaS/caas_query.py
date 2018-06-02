@@ -1,6 +1,6 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # 6/1/18
-# updated 6/1/18
+# updated 6/2/18
 
 '''
 config/query_config.json holds all search parameters other than the elasticsearch
@@ -26,21 +26,21 @@ elastic_path = 'config/elastic_search_request.json'
 query_config_path = 'config/query_config.json'
 log_file = 'query.log'
 
-record = {
-    'title': '',
-    'url': '',
-    'caas_id': '',
-    'cms_id': '',
-    'tags': [],
-    'gnlp_categories': [],
-    'wnlp_categories': []
-}
-
 
 def _initialize_logger(name):
     logger = logging.getLogger(name)
     logger.info('{} logger instantiated'.format(name))
     return logger
+
+
+def _check_file(output):
+    '''confirm overwrite of an existing file'''
+    if os.path.isfile(output):
+        logger.info('the specified output file already exists, do you want to overwrite it?')
+        overwrite = input('y/n: ').lower()
+        return output if overwrite.lower().startswith('y') else None
+    else:
+        return output
 
 
 def configure_logger():
@@ -53,16 +53,6 @@ def configure_logger():
     logging.info('logging configured')
 
     return _initialize_logger('query')
-
-
-def _check_file(output):
-    '''confirm overwrite of an existing file'''
-    if os.path.isfile(output):
-        logger.info('the specified output file already exists, do you want to overwrite it?')
-        overwrite = input('y/n: ').lower()
-        return output if overwrite.lower().startswith('y') else None
-    else:
-        return output
 
 
 def capture_args():
