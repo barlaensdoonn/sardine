@@ -1,7 +1,7 @@
 # wrapper for legacy Time Inc's python 3 CaaS client hosted here:
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 6/1/18
+# updated 6/2/18
 
 import sys
 import yaml
@@ -66,7 +66,7 @@ class CaaSClient:
         with open(json_path) as conf:
             return json.load(conf)
 
-    def _parse_query_response(self, query_data):
+    def _parse_search_response(self, query_data):
         '''return the entities from a successful query, otherwise return None'''
         self.logger.info('query returned {} results'.format(query_data['found']))
         return query_data['entities'] if query_data['found'] else None
@@ -109,6 +109,31 @@ class CaaSClient:
 
         return search_params
 
+    def get_batch(self, ids=[]):
+        '''currently using this to get nlp results by following "$nlp_id" edges'''
+        self.logger.info('querying CaaS via client.get_batch()...')
+
+        batch_params = {
+            "batchRequest": {
+                "Ids": ids
+            }
+        }
+
+        try:
+            response = self.client.get_batch(batch_params)
+        except Exception:
+            self.logger.error('something went wrong...')
+            self.logger.error('reraising the exception so we can look at the stack trace')
+            sleep(1)
+            raise
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            self.logger.error('query failed with response code {}'.format(response.status_code))
+            self.logger.error('raising the error so we can look at it')
+            response.raise_for_status()
+
     def search(self, elastic_request=None):
         '''
         if a specific elastic request is passed in here, it will be forwarded to
@@ -117,7 +142,7 @@ class CaaSClient:
         '''
         tries = 5
         success = False
-        self.logger.info('querying CaaS...')
+        self.logger.info('querying CaaS via client.search()...')
 
         while not success and tries:
             try:
