@@ -30,12 +30,12 @@ log_file = 'query.log'
 class CaaSRecord:
     __slots__ = ('title', 'url', 'tags', 'caas_id', 'cms_id', 'gnlp_categories', 'wnlp_categories')
 
-    def __init__(self, title=None, url=None, tags=None, caas_id=None, cms_id=None, gnlp_categories=None, wnlp_categories=None):
+    def __init__(self, title='', url='', caas_id='', cms_id='', tags=[], gnlp_categories=None, wnlp_categories=None):
         self.title = title
         self.url = url
-        self.tags = tags
         self.caas_id = caas_id
         self.cms_id = cms_id
+        self.tags = tags
         self.gnlp_categories = gnlp_categories
         self.wnlp_categories = wnlp_categories
 
@@ -105,11 +105,9 @@ def extract_pronto_data(entry):
         'url': None,
         'tag': None
     }
+
     # pronto data
     pronto_data = entry['pronto']['article']
-
-
-
 
 
 if __name__ == '__main__':
