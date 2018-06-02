@@ -160,7 +160,7 @@ class CaaSClient:
                 raise
 
         if response.status_code == 200:
-            return self._parse_query_response(response.json())
+            return self._parse_search_response(response.json())
         else:
             self.logger.error('query failed with response code {}'.format(response.status_code))
             self.logger.error('raising the error so we can look at it')
