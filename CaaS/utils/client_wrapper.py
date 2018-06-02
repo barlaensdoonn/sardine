@@ -83,7 +83,7 @@ class CaaSClient:
 
         return caas_client
 
-    def construct_search_params(self, elastic_request=None):
+    def _construct_search_params(self, elastic_request=None):
         '''
         query_config.json holds all search parameters other than the elasticsearch
         request. these params are: 'type', 'provider', 'follow', and 'fields'
@@ -146,7 +146,7 @@ class CaaSClient:
 
         while not success and tries:
             try:
-                search_params = self.construct_search_params(elastic_request=elastic_request)
+                search_params = self._construct_search_params(elastic_request=elastic_request)
                 response = self.client.search(search_params)
                 success = True
             except KeyError:
