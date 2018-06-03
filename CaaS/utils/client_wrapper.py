@@ -10,23 +10,16 @@ import logging
 import logging.config
 from time import sleep
 
+# try importing the caas_keys module
+# the import statement varies depending on where this client_wrapper module is imported
 try:
     from . import caas_keys
 except ImportError:
     import caas_keys
 
-
 # add the caas python 3 client to our path so the script can use it
 sys.path.insert(0, caas_keys.path_to_caas_module_home)
 from caas_content_client_python_3 import client
-
-
-example_elastic_search_request = {
-    "size": 25,
-    "from": 0,
-    "query": {"match": {"_all": "hair"}},
-    "sort": [{"$date": {"unmapped_type": "long", "order": "desc"}}]
-}
 
 
 class CaaSClient:
@@ -34,7 +27,7 @@ class CaaSClient:
     wrapper for legacy Time Inc's python3 CaaS client. main use is to query the
     CaaS datastore. the search() method constructs its search from the files
     specified by elastic_path and query_config_path. these paths should be passed
-    in when constructing a CaaSClient instance unless you're using it from its directory
+    in when constructing a CaaSClient instance unless you're using it from its directory.
 
     check the docstrings for construct_search_params() and search() methods for more info
     '''
@@ -42,6 +35,13 @@ class CaaSClient:
     log_file = 'caas_client.log'
     elastic_path = '../config/elastic_search_request.json'
     query_config_path = '../config/query_config.json'
+
+    example_elastic_search_request = {
+        "size": 25,
+        "from": 0,
+        "query": {"match": {"_all": "hair"}},
+        "sort": [{"$date": {"unmapped_type": "long", "order": "desc"}}]
+    }
 
     def __init__(self, elastic_path=elastic_path, query_config_path=query_config_path, logger=None):
         self.logger = logger if logger else self._init_logger()
@@ -107,7 +107,10 @@ class CaaSClient:
         return search_params
 
     def get_batch(self, ids=[]):
-        '''currently using this to get nlp results by following "$nlp_id" edges'''
+        '''
+        wraps Time's caas client.get_batch() method.
+        currently using this to get nlp results by following "$nlp_id" edges
+        '''
         self.logger.info('querying CaaS via client.get_batch()...')
 
         batch_params = {

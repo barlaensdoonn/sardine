@@ -135,6 +135,10 @@ def _initialize_logger(name):
 
 
 def _init_output_file(output_file):
+    '''
+    create a new csv file and write headers to it. headers are taken from the
+    QueryData "fieldnames" class variable
+    '''
     with open(output_file, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=QueryData.fieldnames)
         writer.writeheader()
@@ -146,7 +150,7 @@ def _init_output_file(output_file):
 def _check_output(output_file):
     '''
     if output file exists, confirm overwrite or append. if append, return it.
-    if overwrite or it doesn't exist initialize it with headers
+    if overwrite or it doesn't exist initialize it with headers, then return it.
     '''
     if os.path.isfile(output_file):
         logger.info('the specified output file already exists, do you want to overwrite (o) or append (a) to it ?')
