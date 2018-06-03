@@ -20,6 +20,7 @@ import csv
 import yaml
 import logging
 import logging.config
+from collections import namedtuple
 from utils import client_wrapper
 
 elastic_path = 'config/elastic_search_request.json'
@@ -70,11 +71,38 @@ def capture_args():
         return _check_file(output)
 
 
+def get_gnlp_data(client, records):
+    '''
+    construct a dict formatted as gnlp_id: (caas_id, []), then query CaaS for
+    google NLP data for a batch of gnlp_ids. currently capturing categories and
+    corresponding confidence level, but might also be useful to capture 'nlp_entities'.
+    'nlp_docSentiment' is also available.
+
+    not all google nlp results contain the 'nlp_categories' field.
+    '''
+    gnlps = {}
+    gnlp = namedtuple('gnlp', ['caas_id', 'categories'])
+
+    for key in records.keys():
+        if records[key]['gnlp_id']:
+            gnlps[records[key]['gnlp_id']] = gnlp(key, {})
+
+    gnlp_ids = [key for key in gnlps.keys()]
+    gnlp_data = client.get_batch(ids=gnlp_ids)
+
+    for i in range(len(gnlp_data)):
+        gnlp_id = gnlp_data[i]['$']['id']
+        if 'nlp_categories' in gnlp_data[i].keys():
+            # gnlps[gnlp_id].categories.append(gnlp_data[i]['nlp_categories'][0])
+            gnlps[gnlp_id].categories['name'] = gnlp_data[i]['nlp_categories'][0]['name']
+            gnlps[gnlp_id].categories['confidence'] = gnlp_data[i]['nlp_categories'][0]['confidence']
+
+
 class QueryData:
 
     def __init__(self, query_response):
         self.response = query_response
-        self.records = {i: self._init_record() for i in range(len(self.response))}
+        self.records = self._init_records()
         self._extract_caas_data()
 
     def _init_records(self):
@@ -112,7 +140,7 @@ class QueryData:
             self.records[caas_id]['url'] = entry['web_article_url'] if 'web_article_url' in entry.keys() else None
             self.records[caas_id]['brand'] = entry['brand'] if 'brand' in entry.keys() else None
             self.records[caas_id]['gnlp_id'] = entry["$i_nlp_source_google"][0]['$id'] if "$i_nlp_source_google" in entry.keys() else None
-            self.records[caas_id]['wnlp_id'] = entry["$i_nlp_source_watson"] if "$i_nlp_source_watson" in entry.keys() else None
+            self.records[caas_id]['wnlp_id'] = entry["$i_nlp_source_watson"][0]['$id'] if "$i_nlp_source_watson" in entry.keys() else None
 
 
 if __name__ == '__main__':
