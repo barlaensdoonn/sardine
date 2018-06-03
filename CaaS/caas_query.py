@@ -1,4 +1,5 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
+# and output results to a csv file if an output file is specified.
 # 6/1/18
 # updated 6/3/18
 

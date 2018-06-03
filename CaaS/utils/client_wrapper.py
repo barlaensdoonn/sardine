@@ -106,34 +106,6 @@ class CaaSClient:
 
         return search_params
 
-    def get_batch(self, ids=[]):
-        '''
-        wraps Time's caas client.get_batch() method.
-        currently using this to get nlp results by following "$nlp_id" edges
-        '''
-        self.logger.info('querying CaaS via client.get_batch()...')
-
-        batch_params = {
-            "batchRequest": {
-                "Ids": ids
-            }
-        }
-
-        try:
-            response = self.client.get_batch(batch_params)
-        except Exception:
-            self.logger.error('something went wrong...')
-            self.logger.error('reraising the exception so we can look at the stack trace')
-            sleep(1)
-            raise
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            self.logger.error('query failed with response code {}'.format(response.status_code))
-            self.logger.error('raising the error so we can look at it')
-            response.raise_for_status()
-
     def search(self, elastic_request=None):
         '''
         if a specific elastic request is passed in here, it will be forwarded to
@@ -181,6 +153,34 @@ class CaaSClient:
         else:
             self.logger.info('query results exhausted')
             return None
+
+    def get_batch(self, ids=[]):
+        '''
+        wraps Time's caas client.get_batch() method.
+        currently using this to get nlp results by following "$nlp_id" edges
+        '''
+        self.logger.info('querying CaaS via client.get_batch()...')
+
+        batch_params = {
+            "batchRequest": {
+                "Ids": ids
+            }
+        }
+
+        try:
+            response = self.client.get_batch(batch_params)
+        except Exception:
+            self.logger.error('something went wrong...')
+            self.logger.error('reraising the exception so we can look at the stack trace')
+            sleep(1)
+            raise
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            self.logger.error('query failed with response code {}'.format(response.status_code))
+            self.logger.error('raising the error so we can look at it')
+            response.raise_for_status()
 
 
 if __name__ == '__main__':
