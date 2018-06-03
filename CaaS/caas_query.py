@@ -73,29 +73,29 @@ def capture_args():
 
 def get_gnlp_data(client, records):
     '''
-    construct a dict formatted as gnlp_id: (caas_id, []), then query CaaS for
-    google NLP data for a batch of gnlp_ids. currently capturing categories and
-    corresponding confidence level, but might also be useful to capture 'nlp_entities'.
-    'nlp_docSentiment' is also available.
+    construct a dict formatted as gnlp_id: gnlp(caas_id, {}), where the value of
+    gnlp_id is a namedtuple called gnlp that has 2 fields: caas_id and categories.
+    then query CaaS for google NLP data for the entries in the argument records
+    that have associated google nlp ids.
 
-    not all google nlp results contain the 'nlp_categories' field.
+    currently this function is capturing 'nlp_categories' and their corresponding
+    'confidence' level. other available fields are 'nlp_entities' and 'nlp_docSentiment'.
+
+    any google nlp results that do not contain the field 'nlp_categories' are dropped.
     '''
-    gnlps = {}
+    logger.info('getting available google nlp data for the current response')
     gnlp = namedtuple('gnlp', ['caas_id', 'categories'])
-
-    for key in records.keys():
-        if records[key]['gnlp_id']:
-            gnlps[records[key]['gnlp_id']] = gnlp(key, {})
-
+    gnlps = {records[key]['gnlp_id']: gnlp(key, {}) for key in records.keys() if records[key]['gnlp_id']}
     gnlp_ids = [key for key in gnlps.keys()]
     gnlp_data = client.get_batch(ids=gnlp_ids)
 
     for i in range(len(gnlp_data)):
         gnlp_id = gnlp_data[i]['$']['id']
         if 'nlp_categories' in gnlp_data[i].keys():
-            # gnlps[gnlp_id].categories.append(gnlp_data[i]['nlp_categories'][0])
             gnlps[gnlp_id].categories['name'] = gnlp_data[i]['nlp_categories'][0]['name']
             gnlps[gnlp_id].categories['confidence'] = gnlp_data[i]['nlp_categories'][0]['confidence']
+
+    return {key: value for key, value in gnlps.items() if value.categories}
 
 
 class QueryData:
@@ -151,5 +151,4 @@ if __name__ == '__main__':
                                             logger=_initialize_logger('caas_client'))
 
     response = caas_client.search()
-    rsp = response[0]
-    print(rsp['pronto'])
+    data = QueryData(response)
