@@ -1,6 +1,6 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # 6/1/18
-# updated 6/2/18
+# updated 6/3/18
 
 '''
 config/query_config.json holds all search parameters other than the elasticsearch
@@ -71,41 +71,6 @@ def capture_args():
         return _check_file(output)
 
 
-def get_gnlp_data(client, records):
-    '''
-    construct a dict formatted as gnlp_id: gnlp(caas_id, {}), where the value of
-    gnlp_id is a namedtuple called gnlp that has 2 fields: caas_id and categories.
-    then query CaaS for google NLP data for the entries in the argument records
-    that have associated google nlp ids.
-
-    currently this function is capturing 'nlp_categories' and their corresponding
-    'confidence' level. other available fields are 'nlp_entities' and 'nlp_docSentiment'.
-
-    any google nlp results that do not contain the field 'nlp_categories' are dropped.
-    '''
-    logger.info('getting available google nlp data for the current response')
-    gnlp = namedtuple('gnlp', ['caas_id', 'categories'])
-    gnlps = {records[key]['gnlp_id']: gnlp(key, {}) for key in records.keys() if records[key]['gnlp_id']}
-    gnlp_ids = [key for key in gnlps.keys()]
-    gnlp_data = client.get_batch(ids=gnlp_ids)
-
-    for i in range(len(gnlp_data)):
-        gnlp_id = gnlp_data[i]['$']['id']
-        if 'nlp_categories' in gnlp_data[i].keys():
-            gnlps[gnlp_id].categories['name'] = gnlp_data[i]['nlp_categories'][0]['name']
-            gnlps[gnlp_id].categories['confidence'] = gnlp_data[i]['nlp_categories'][0]['confidence']
-
-    return {key: value for key, value in gnlps.items() if value.categories}
-
-
-def update_query_with_gnlp_data(records, gnlp_data):
-    for key in gnlp_data.keys():
-        caas_id = gnlp_data[key].caas_id
-        records[caas_id]['gnlp_categories'] = gnlp_data[key].categories
-
-    return records
-
-
 class QueryData:
 
     def __init__(self, query_response):
@@ -144,11 +109,62 @@ class QueryData:
             entry = self.response[i]
             caas_id = entry['$']['id']
             self.records[caas_id]['cms_id'] = entry['cms_id'] if 'cms_id' in entry.keys() else None
-            self.records[caas_id]['title'] = entry['web_article_title'] if 'web_article_title' in entry.keys() else entry['$name']
+            self.records[caas_id]['title'] = entry['web_article_title'].strip() if 'web_article_title' in entry.keys() else entry['$name']
             self.records[caas_id]['url'] = entry['web_article_url'] if 'web_article_url' in entry.keys() else None
             self.records[caas_id]['brand'] = entry['brand'] if 'brand' in entry.keys() else None
             self.records[caas_id]['gnlp_id'] = entry["$i_nlp_source_google"][0]['$id'] if "$i_nlp_source_google" in entry.keys() else None
             self.records[caas_id]['wnlp_id'] = entry["$i_nlp_source_watson"][0]['$id'] if "$i_nlp_source_watson" in entry.keys() else None
+
+    def _extract_nlp_categories(self, nlp_records, nlp_data, type):
+        '''any nlp results that do not contain the field 'nlp_categories' are dropped'''
+        for i in range(len(nlp_data)):
+            nlp_id = nlp_data[i]['$']['id']
+            if 'nlp_categories' in nlp_data[i].keys():
+                if type is 'google':
+                    nlp_records[nlp_id].categories['name'] = nlp_data[i]['nlp_categories'][0]['name']
+                    nlp_records[nlp_id].categories['confidence'] = nlp_data[i]['nlp_categories'][0]['confidence']
+                else:
+                    nlp_records[nlp_id].categories['label'] = nlp_data[i]['nlp_categories'][0]['label']
+                    nlp_records[nlp_id].categories['score'] = nlp_data[i]['nlp_categories'][0]['score']
+
+        # drop any records that don't have categories
+        nlp_records = {key: value for key, value in nlp_records.items() if value.categories}
+        logger.info('extracted {} nlp categories for {} records'.format(type, len(nlp_records)))
+
+        return nlp_records
+
+    def _update_records_with_nlp_data(self, nlp_records, type):
+        '''update self.records with the extracted nlp data'''
+        cat_key = 'gnlp_categories' if type is 'google' else 'wnlp_categories'
+        for key in nlp_records.keys():
+            caas_id = nlp_records[key].caas_id
+            self.records[caas_id][cat_key] = nlp_records[key].categories
+
+    def get_nlp_data(self, client, type='google'):
+        '''
+        construct a dict formatted as nlp_id: nlp(caas_id, {}), where the value of
+        nlp_id is a namedtuple called nlp that has 2 fields: caas_id and categories.
+        then query CaaS for google or watson NLP data for the entries in records arg
+        that have associated nlp ids. type kwarg should be either 'google' or 'watson'.
+
+        currently this function is capturing 'nlp_categories' and their corresponding
+        'confidence' level (google) or score (watson).
+
+        other available fields for google are 'nlp_entities' and 'nlp_docSentiment'.
+        other available fields for watson are 'nlp_keywords', 'nlp_concepts',
+        'nlp_doc_sentiment', and 'nlp_entities'.
+        '''
+        logger.info('getting available {} nlp data for this batch of query data'.format(type))
+        nlp = namedtuple('nlp', ['caas_id', 'categories'])
+        id_key = 'gnlp_id' if type is 'google' else 'wnlp_id'
+
+        nlp_records = {self.records[key][id_key]: nlp(key, {}) for key in self.records.keys() if self.records[key][id_key]}
+        nlp_ids = [key for key in nlp_records.keys()]
+        nlp_data = client.get_batch(ids=nlp_ids)
+        logger.info('query returned {} results'.format(len(nlp_data)))
+
+        nlp_records = self._extract_nlp_categories(nlp_records, nlp_data, type)
+        self._update_records_with_nlp_data(nlp_records, type)
 
 
 if __name__ == '__main__':
@@ -160,3 +176,6 @@ if __name__ == '__main__':
 
     response = caas_client.search()
     data = QueryData(response)
+
+    for type in ['google', 'watson']:
+        data.get_nlp_data(caas_client, type=type)
