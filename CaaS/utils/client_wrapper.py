@@ -1,7 +1,7 @@
 # wrapper for legacy Time Inc's python 3 CaaS client hosted here:
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 6/2/18
+# updated 6/3/18
 
 import sys
 import yaml
@@ -49,6 +49,7 @@ class CaaSClient:
         self.elastic_path = elastic_path
         self.elastic_request = None
         self.query_config_path = query_config_path
+        self.num_query_results = 0
 
     def _init_logger(self):
         with open('log.yaml', 'r') as log_conf:
@@ -68,13 +69,9 @@ class CaaSClient:
 
     def _parse_search_response(self, query_data):
         '''return the entities from a successful query, otherwise return None'''
-        self.logger.info('query returned {} results'.format(query_data['found']))
-        return query_data['entities'] if query_data['found'] else None
-
-    def _loop_thru_response(self, data):
-        '''loop through response data until we reach the end'''
-        if len(data['entities'] < example_elastic_search_request['size']):
-            pass
+        self.num_query_results = int(query_data['found'])
+        self.logger.info('query returned {} results'.format(self.num_query_results))
+        return query_data['entities'] if self.num_query_results else None
 
     def _init_client(self, env='prod'):
         """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
@@ -165,6 +162,22 @@ class CaaSClient:
             self.logger.error('query failed with response code {}'.format(response.status_code))
             self.logger.error('raising the error so we can look at it')
             response.raise_for_status()
+
+    def get_next_results(self):
+        '''
+        loop through query data by incrementing the elastic_request "from" parameter
+        and calling search() for a new batch of results
+        '''
+        batch = self.elastic_request['from']
+        next_batch = batch + self.elastic_request['size']
+
+        if next_batch < self.num_query_results:
+            self.elastic_request['from'] = next_batch
+            self.logger.info('getting results for query batch starting with result {}'.format(next_batch))
+            return self.search(elastic_request=self.elastic_request)
+        else:
+            self.logger.info('query results exhausted')
+            return None
 
 
 if __name__ == '__main__':

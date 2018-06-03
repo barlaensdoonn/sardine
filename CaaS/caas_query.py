@@ -28,50 +28,10 @@ query_config_path = 'config/query_config.json'
 log_file = 'query.log'
 
 
-def _initialize_logger(name):
-    logger = logging.getLogger(name)
-    logger.info('{} logger instantiated'.format(name))
-    return logger
-
-
-def _check_file(output):
-    '''confirm overwrite of an existing file'''
-    if os.path.isfile(output):
-        logger.info('the specified output file already exists, do you want to overwrite it?')
-        overwrite = input('y/n: ').lower()
-        return output if overwrite.lower().startswith('y') else None
-    else:
-        return output
-
-
-def configure_logger():
-    with open('utils/log.yaml', 'r') as log_conf:
-        log_config = yaml.safe_load(log_conf)
-
-    log_config['handlers']['file']['filename'] = log_file
-    logging.config.dictConfig(log_config)
-    logging.info('* * * * * * * * * * * * * * * * * * * *')
-    logging.info('logging configured')
-
-    return _initialize_logger('query')
-
-
-def capture_args():
-    '''
-    capture any arguments supplied to the script on the command line. if an output
-    file is specified, check if it already exists and confirm overwrite if it does
-    '''
-    if len(sys.argv) > 2:
-        logger.error('too many arguments')
-        logger.info('usage: python3 query.py output_file.csv')
-        raise SystemExit('output_file.csv is optional')
-    elif len(sys.argv) == 2:
-        output = sys.argv[1]
-        output = os.path.join('output', output)
-        return _check_file(output)
-
-
 class QueryData:
+
+    fieldnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id',
+                  'wnlp_id', 'gnlp_categories', 'wnlp_categories']
 
     def __init__(self, query_response):
         self.response = query_response
@@ -109,7 +69,8 @@ class QueryData:
             entry = self.response[i]
             caas_id = entry['$']['id']
             self.records[caas_id]['cms_id'] = entry['cms_id'] if 'cms_id' in entry.keys() else None
-            self.records[caas_id]['title'] = entry['web_article_title'].strip() if 'web_article_title' in entry.keys() else entry['$name']
+            self.records[caas_id]['title'] = entry['web_article_title'].strip() if 'web_article_title' in entry.keys() \
+                else entry['$name'] if '$name' in entry.keys() else None
             self.records[caas_id]['url'] = entry['web_article_url'] if 'web_article_url' in entry.keys() else None
             self.records[caas_id]['brand'] = entry['brand'] if 'brand' in entry.keys() else None
             self.records[caas_id]['gnlp_id'] = entry["$i_nlp_source_google"][0]['$id'] if "$i_nlp_source_google" in entry.keys() else None
@@ -155,10 +116,10 @@ class QueryData:
         'nlp_doc_sentiment', and 'nlp_entities'.
         '''
         logger.info('getting available {} nlp data for this batch of query data'.format(type))
-        nlp = namedtuple('nlp', ['caas_id', 'categories'])
+        Nlp = namedtuple('Nlp', ['caas_id', 'categories'])
         id_key = 'gnlp_id' if type is 'google' else 'wnlp_id'
 
-        nlp_records = {self.records[key][id_key]: nlp(key, {}) for key in self.records.keys() if self.records[key][id_key]}
+        nlp_records = {self.records[key][id_key]: Nlp(key, {}) for key in self.records.keys() if self.records[key][id_key]}
         nlp_ids = [key for key in nlp_records.keys()]
         nlp_data = client.get_batch(ids=nlp_ids)
         logger.info('query returned {} results'.format(len(nlp_data)))
@@ -167,15 +128,94 @@ class QueryData:
         self._update_records_with_nlp_data(nlp_records, type)
 
 
+def _initialize_logger(name):
+    logger = logging.getLogger(name)
+    logger.info('{} logger instantiated'.format(name))
+    return logger
+
+
+def _init_output_file(output_file):
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=QueryData.fieldnames)
+        writer.writeheader()
+
+    logger.info('{} file initialized with headers'.format(output_file))
+    return output_file
+
+
+def _check_output(output_file):
+    '''
+    if output file exists, confirm overwrite or append. if append, return it.
+    if overwrite or it doesn't exist initialize it with headers
+    '''
+    if os.path.isfile(output_file):
+        logger.info('the specified output file already exists, do you want to overwrite (o) or append (a) to it ?')
+        mode = input('o/a: ').lower()
+        if mode.lower().startswith('o'):
+            return _init_output_file(output_file)
+        else:
+            return output_file
+
+    return _init_output_file(output_file)
+
+
+def configure_logger():
+    with open('utils/log.yaml', 'r') as log_conf:
+        log_config = yaml.safe_load(log_conf)
+
+    log_config['handlers']['file']['filename'] = log_file
+    logging.config.dictConfig(log_config)
+    logging.info('* * * * * * * * * * * * * * * * * * * *')
+    logging.info('logging configured')
+
+    return _initialize_logger('query')
+
+
+def capture_args():
+    '''
+    capture any arguments supplied to the script on the command line. if an output file
+    is specified, check if it already exists and confirm overwrite/append if it does.
+    return None if no output is specified, so we know not to write results.
+    '''
+    if len(sys.argv) > 2:
+        logger.error('too many arguments')
+        logger.info('usage: python3 query.py output_file.csv')
+        raise SystemExit('output_file.csv is optional')
+    elif len(sys.argv) == 2:
+        output = sys.argv[1]
+        output = os.path.join('output', output)
+        return _check_output(output)
+    else:
+        return None
+
+
+def write_to_file(outfile, records):
+    '''append records to csv file'''
+    logger.info('writing {} records to {}'.format(len(records), outfile))
+
+    with open(outfile, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=QueryData.fieldnames)
+        for key in records.keys():
+            writer.writerow(records[key])
+
+
 if __name__ == '__main__':
     logger = configure_logger()
-    output_file = capture_args()
+    output = capture_args()
     caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path,
                                             query_config_path=query_config_path,
                                             logger=_initialize_logger('caas_client'))
-
     response = caas_client.search()
-    data = QueryData(response)
 
-    for type in ['google', 'watson']:
-        data.get_nlp_data(caas_client, type=type)
+    if output:
+        # caas_client.search() returns a fixed # of results specified in the
+        # elasticsearch request "size" param. if we are outputting to a file,
+        # extract the data from the current response, write it to our file,
+        # then repeat on the next batch til we're done
+        while response:
+            data = QueryData(response)
+            for type in ['google', 'watson']:
+                data.get_nlp_data(caas_client, type=type)
+            write_to_file(output, data.records)
+            logger.info(' - - - - - - - - - - - - - - - - - - - ')
+            response = caas_client.get_next_results()
