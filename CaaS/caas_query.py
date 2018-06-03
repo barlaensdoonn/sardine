@@ -4,15 +4,17 @@
 # updated 6/3/18
 
 '''
+the query that is run by this script is determined by the elasticsearch request
+specified in the file 'config/elastic_search_request.json'.
+to find the elasticsearch request to paste into that file, type a query into the
+search bar at https://search.timeinc.com/search, then click on the "Advanced" tab
+and paste the code from there verbatim into the above json file.
+
 config/query_config.json holds all search parameters other than the elasticsearch
 request. these params are: 'type', 'provider', 'follow', and 'fields'.
 refer to the CaaS API documentation for an explanation of these:
 http://docs-caas.timeincapp.com/#search-and-get-examples
-
-the thing that will change most often is the elastic_search_request.
-paste your request into the file 'config/elastic_search_request.json'
-the content to paste can be found by searching search.timeinc.com, then
-clicking on the "Advanced" tab and pasting the code from there verbatim.
+(these probably won't be changed very often)
 '''
 
 import os
@@ -30,7 +32,9 @@ log_file = 'query.log'
 
 
 class QueryData:
+    '''class to extract, parse, and hold the specific data we're interested in from a CaaS query'''
 
+    # our csv writer use these to write the header row to our csv output file
     fieldnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id',
                   'wnlp_id', 'gnlp_categories', 'wnlp_categories']
 
@@ -101,6 +105,9 @@ class QueryData:
         for key in nlp_records.keys():
             caas_id = nlp_records[key].caas_id
             self.records[caas_id][cat_key] = nlp_records[key].categories
+
+    def filter_out_empties(self):
+        self.records = {key: value for key, value in self.records.items() if value['url']}
 
     def get_nlp_data(self, client, type='google'):
         '''
@@ -205,22 +212,36 @@ def write_to_file(outfile, records):
 
 
 if __name__ == '__main__':
+    # initialize our logger and check to see if an output file was passed in on the command line
     logger = configure_logger()
     output = capture_args()
+
+    # initialize our caas_client, which is a wrapper Brandon wrote around Time Inc's
+    # caas-python-3-client that makes it a little easier for us to query the CaaS datastore
+    # this wrapper lives in the utils/client_wrapper.py module
     caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path,
                                             query_config_path=query_config_path,
                                             logger=_initialize_logger('caas_client'))
+
+    # conduct an initial search to see how many results are returned
+    # from the query specified in elastic_search_request.json
     response = caas_client.search()
 
+    # we don't need to move past the initial search if we're not outputting to a file
     if output:
         # caas_client.search() returns a fixed # of results specified in the
-        # elasticsearch request "size" param. if we are outputting to a file,
-        # extract the data from the current response, write it to our file,
-        # then repeat on the next batch til we're done
+        # elasticsearch request's "size" param. if we are outputting to a file,
+        # we need to extract the data from the current response, write it to our file,
+        # then repeat with the next batch til we're done.
         while response:
             data = QueryData(response)
+
+            # query CaaS for nlp data if it is available (technically this follows $nlp_id edges)
             for type in ['google', 'watson']:
                 data.get_nlp_data(caas_client, type=type)
+
+            # drop any records that don't have a url and append this batch to our file
+            data.filter_out_empties()
             write_to_file(output, data.records)
             logger.info(' - - - - - - - - - - - - - - - - - - - ')
             response = caas_client.get_next_results()
