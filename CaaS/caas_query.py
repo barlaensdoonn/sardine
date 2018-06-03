@@ -98,6 +98,14 @@ def get_gnlp_data(client, records):
     return {key: value for key, value in gnlps.items() if value.categories}
 
 
+def update_query_with_gnlp_data(records, gnlp_data):
+    for key in gnlp_data.keys():
+        caas_id = gnlp_data[key].caas_id
+        records[caas_id]['gnlp_categories'] = gnlp_data[key].categories
+
+    return records
+
+
 class QueryData:
 
     def __init__(self, query_response):
@@ -115,8 +123,8 @@ class QueryData:
                 'brand': '',
                 'gnlp_id': '',
                 'wnlp_id': '',
-                'gnlp_categories': [],
-                'wnlp_categories': []
+                'gnlp_categories': {},
+                'wnlp_categories': {}
             } for i in range(len(self.response))
         }
 
