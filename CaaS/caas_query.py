@@ -28,7 +28,7 @@ from utils import client_wrapper
 
 elastic_path = 'config/elastic_search_request.json'
 query_config_path = 'config/query_config.json'
-log_file = 'query.log'
+log_file = 'query_log.log'
 
 
 class QueryData:
@@ -258,9 +258,15 @@ if __name__ == '__main__':
             for type in ['google', 'watson']:
                 data.get_nlp_data(caas_client, type=type)
 
-            # drop any records that don't have a url and append this batch to our file
+            # drop any records that don't have a url
             data.filter_out_empties()
             # data.filter_out_dupes(dupes)
-            write_to_file(output, data.records)
+
+            # attempt to append this batch to our file
+            try:
+                write_to_file(output, data.records)
+            except UnicodeEncodeError as e:
+                logger.warning('UnicodeEncodeError encountered when trying to write to file, skipping this batch...')
+
             logger.info(' - - - - - - - - - - - - - - - - - - - ')
             response = caas_client.get_next_results()
