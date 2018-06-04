@@ -215,21 +215,15 @@ def write_to_file(outfile, records):
             writer.writerow(records[key])
 
 
-def get_dupes():
+def get_existing_urls():
     '''this is a one time function to get duplicates from an existing file'''
     import pandas
 
-    csv_file = 'output/Hair_Classification_Training_Corpus_Content.csv'
-    out_csv = 'output/hair_filtered.csv'
+    csv_file = 'utils/Hair_Classification_Training_Corpus_Content_as_of_06042018.csv'
     colnames = ['content_source', 'caas_id', 'cms_id', 'content_type', 'content_url', 'content_title']
-    out_colnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id', 'wnlp_id', 'gnlp_categegories', 'wnlp_categories']
 
     existing = pandas.read_csv(csv_file, names=colnames)
-    out = pandas.read_csv(out_csv, names=out_colnames)
-    urls = existing.content_url.tolist()
-    out_urls = out.url.tolist()
-
-    return [url for url in urls if url in out_urls]
+    return existing.content_url.tolist()
 
 
 if __name__ == '__main__':
@@ -238,7 +232,7 @@ if __name__ == '__main__':
     output = capture_args()
 
     # get existing urls from Hair Training Classification Corpus spreadsheet
-    # dupes = get_dupes()
+    # dupes = get_existing_urls()
 
     # initialize our caas_client, which is a wrapper Brandon wrote around Time Inc's
     # caas-python-3-client that makes it a little easier for us to query the CaaS datastore
