@@ -1,7 +1,7 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # and output results to a csv file if an output file is specified.
 # 6/1/18
-# updated 6/3/18
+# updated 6/4/18
 
 '''
 the query that is run by this script is determined by the elasticsearch request
@@ -109,6 +109,10 @@ class QueryData:
     def filter_out_empties(self):
         self.records = {key: value for key, value in self.records.items() if value['url']}
 
+    def filter_out_dupes(self, dupes):
+        logger.warning('found duplicate urls, dropping them from the records')
+        self.records = {key: value for key, value in self.records.items() if value['url'] not in dupes}
+
     def get_nlp_data(self, client, type='google'):
         '''
         construct a dict formatted as nlp_id: nlp(caas_id, {}), where the value of
@@ -211,10 +215,30 @@ def write_to_file(outfile, records):
             writer.writerow(records[key])
 
 
+def get_dupes():
+    '''this is a one time function to get duplicates from an existing file'''
+    import pandas
+
+    csv_file = 'output/Hair_Classification_Training_Corpus_Content.csv'
+    out_csv = 'output/hair_filtered.csv'
+    colnames = ['content_source', 'caas_id', 'cms_id', 'content_type', 'content_url', 'content_title']
+    out_colnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id', 'wnlp_id', 'gnlp_categegories', 'wnlp_categories']
+
+    existing = pandas.read_csv(csv_file, names=colnames)
+    out = pandas.read_csv(out_csv, names=out_colnames)
+    urls = existing.content_url.tolist()
+    out_urls = out.url.tolist()
+
+    return [url for url in urls if url in out_urls]
+
+
 if __name__ == '__main__':
     # initialize our logger and check to see if an output file was passed in on the command line
     logger = configure_logger()
     output = capture_args()
+
+    # get existing urls from Hair Training Classification Corpus spreadsheet
+    # dupes = get_dupes()
 
     # initialize our caas_client, which is a wrapper Brandon wrote around Time Inc's
     # caas-python-3-client that makes it a little easier for us to query the CaaS datastore
@@ -242,6 +266,7 @@ if __name__ == '__main__':
 
             # drop any records that don't have a url and append this batch to our file
             data.filter_out_empties()
+            # data.filter_out_dupes(dupes)
             write_to_file(output, data.records)
             logger.info(' - - - - - - - - - - - - - - - - - - - ')
             response = caas_client.get_next_results()
