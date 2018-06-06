@@ -2,5 +2,4 @@ caas-content-client-python-3/
 caas_keys.py
 *.pyc
 __pycache__/
-*.log
 *.csv
