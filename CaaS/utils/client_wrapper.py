@@ -18,13 +18,14 @@ try:
 except ImportError:
     import caas_keys
 
-# add the caas python 3 client to our path so the script can use it
-sys.path.insert(0, os.path.join(get_basepath))
-from caas_content_client_python_3 import client
-
 
 def get_basepath():
     return os.path.dirname(os.path.realpath(__file__))
+
+
+# add the caas python 3 client to our path so the script can use it
+sys.path.insert(0, os.path.join(get_basepath(), 'caas-content-client-python-3'))
+from caas_content_client_python_3 import client
 
 
 class CaaSClient:
