@@ -1,8 +1,9 @@
 # wrapper for legacy Time Inc's python 3 CaaS client hosted here:
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 6/3/18
+# updated 6/6/18
 
+import os
 import sys
 import yaml
 import json
@@ -18,8 +19,12 @@ except ImportError:
     import caas_keys
 
 # add the caas python 3 client to our path so the script can use it
-sys.path.insert(0, caas_keys.path_to_caas_module_home)
+sys.path.insert(0, os.path.join(get_basepath))
 from caas_content_client_python_3 import client
+
+
+def get_basepath():
+    return os.path.dirname(os.path.realpath(__file__))
 
 
 class CaaSClient:
@@ -76,7 +81,7 @@ class CaaSClient:
     def _init_client(self, env='prod'):
         """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
         caas_client = client.EntityServiceClient(env)
-        caas_client.x_api_key = caas_keys.CAAS_API_PROD_KEY_BRANDON  # specify our API key for the client
+        caas_client.x_api_key = caas_keys.CAAS_API_PROD_KEY  # specify our API key for the client
 
         return caas_client
 
