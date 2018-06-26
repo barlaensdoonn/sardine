@@ -44,6 +44,8 @@ def update_sources(source_dict, source):
 
 
 def _get_cell_value(row, column_key):
+    '''sleep here so we don't exceed the 1 request per second quota for the sheets API'''
+    sleep(0.25)
     return content.cell(row, columns[column_key]).value
 
 
@@ -82,7 +84,7 @@ if __name__ == '__main__':
         'source': 1,
         'caas_id': 2,
         'cms_id': 3,
-        'url': 5
+        'url': 4
     }
 
     brands_not_in_caas = ['http://www.bhg.com/', 'https://www.marthastewart.com',
