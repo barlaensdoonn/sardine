@@ -17,8 +17,7 @@ class Gsheet(object):
     '''methods for interacting with Google Drive spreadsheets'''
 
     log_file = 'gspreadsheet.log'
-    credents = caas_keys.spread_cred
-    home_credents = caas_keys.spread_cred_home
+    credents = [caas_keys.spread_cred, caas_keys.spread_cred_home, caas_keys.spread_cred_laptop]
 
     def __init__(self, logger=None):
         self.logger = logger if logger else self._init_logger()
@@ -48,18 +47,13 @@ class Gsheet(object):
         self.logger.info('authenticating to Google Sheets...')
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
-        if os.path.isfile(self.credents):
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(self.credents, scope)
-
-        elif os.path.isfile(self.home_credents):
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(self.home_credents, scope)
-            self.logger.info('working from home today i see =]')
-
+        for credent in self.credents:
+            if os.path.isfile(credent):
+                credentials = ServiceAccountCredentials.from_json_keyfile_name(credent, scope)
+                return gspread.authorize(credentials)
         else:
-            self.logger.error('unable to authenticate with gspread')
+            self.logger.error("didn't find any valid gspread credential files")
             self._exit()
-
-        return gspread.authorize(credentials)
 
     def get_spreadsheet(self, key=None, url=None, title=None):
         '''try to find spreadsheet from a key, url, or title. all arguments should be strings'''

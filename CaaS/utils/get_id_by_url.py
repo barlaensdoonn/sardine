@@ -1,12 +1,12 @@
 #!/usr/local/bin/python3
 # get CaaS conent ID by URL
 # 5/25/18
-# updated 5/30/18
+# updated 6/26/18
 
 import gspreadsheet
 from time import sleep
 from collections import Counter, namedtuple
-from test_query import CaasClient
+from client_wrapper import CaaSClient
 
 
 # example elastic search request from caas client documentation for finding content by url
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     brands_not_in_caas = ['http://www.bhg.com/', 'https://www.marthastewart.com',
                           'https://www.fitnessmagazine.com/', 'https://www.shape.com/']
-    caas_client = CaasClient()
+    caas_client = CaaSClient()
     g = gspreadsheet.Gsheet()
     url_sources = {}
     search_totals = Counter()
