@@ -235,7 +235,7 @@ if __name__ == '__main__':
     # dupes = get_existing_urls()
 
     # initialize our caas_client, which is a wrapper Brandon wrote around Time Inc's
-    # caas-python-3-client that makes it a little easier for us to query the CaaS datastore
+    # caas-python-3-client that makes it a little easier for us to query the CaaS datastore.
     # this wrapper lives in the utils/client_wrapper.py module
     caas_client = client_wrapper.CaaSClient(elastic_path=elastic_path,
                                             query_config_path=query_config_path,
@@ -262,7 +262,8 @@ if __name__ == '__main__':
             data.filter_out_empties()
             # data.filter_out_dupes(dupes)
 
-            # attempt to append this batch to our file
+            # attempt to append this batch to our file, skip this batch
+            # if we get a unicode error which happens occasionally on windows
             try:
                 write_to_file(output, data.records)
             except UnicodeEncodeError as e:
