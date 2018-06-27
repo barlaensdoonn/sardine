@@ -1,7 +1,7 @@
 # wrapper for legacy Time Inc's python 3 CaaS client hosted here:
 # https://github.com/TimeInc/caas-content-client-python-3
 # 5/21/18
-# updated 6/6/18
+# updated 6/27/18
 
 import os
 import sys
@@ -68,23 +68,31 @@ class CaaSClient:
 
         return logging.getLogger('caas_client')
 
-    def _extract_json(self, json_path):
-        '''utility function to extract json from a file'''
-        with open(json_path) as conf:
-            return json.load(conf)
-
-    def _parse_search_response(self, query_data):
-        '''return the entities from a successful query, otherwise return None'''
-        self.num_query_results = int(query_data['found'])
-        self.logger.info('query returned {} results'.format(self.num_query_results))
-        return query_data['entities'] if self.num_query_results else None
-
     def _init_client(self, env='prod'):
         """env can be either 'test' or 'prod', but we'll only ever use 'prod'"""
         caas_client = client.EntityServiceClient(env)
         caas_client.x_api_key = caas_keys.CAAS_API_PROD_KEY  # specify our API key for the client
 
         return caas_client
+
+    def _extract_json(self, json_path):
+        '''utility function to extract json from a file'''
+        with open(json_path) as conf:
+            return json.load(conf)
+
+    def _construct_elastic_request(self, json_path):
+        '''
+        here we override the elasticsearch request's "sort" parameter, setting it
+        to a single field: "_uid". this is so we can use the "search_after" parameter
+        to return results past 10,000 entities, which is not possible otherwise.
+
+        see elasticsearch documentation for more details:
+        https://www.elastic.co/guide/en/elasticsearch/reference/5.1/search-request-search-after.html
+        '''
+        elastic_request = self._extract_json(json_path)
+        elastic_request['sort'] = [{"_uid": "desc"}]
+
+        return elastic_request
 
     def _construct_search_params(self, elastic_request=None):
         '''
@@ -106,11 +114,21 @@ class CaaSClient:
         this is mainly used for debugging.
         '''
         query_config = self._extract_json(self.query_config_path)
-        self.elastic_request = elastic_request if elastic_request else self._extract_json(self.elastic_path)
+        self.elastic_request = elastic_request if elastic_request else self._construct_elastic_request(self.elastic_path)
         search_params = {key: value for key, value in query_config.items()}
         search_params['elasticsearchRequest'] = self.elastic_request
 
         return search_params
+
+    def _parse_search_response(self, query_data):
+        '''
+        return tuple formatted (entities, hits) from a successful query,
+        otherwise return None
+        '''
+        self.num_query_results = int(query_data['found'])
+        self.logger.info('query returned {} results'.format(self.num_query_results))
+
+        return (query_data['entities'], query_data['hits']['hits']) if self.num_query_results else None
 
     def search(self, elastic_request=None):
         '''
@@ -144,7 +162,7 @@ class CaaSClient:
             self.logger.error('raising the error so we can look at it')
             response.raise_for_status()
 
-    def get_next_results(self):
+    def get_next_results_using_from(self):
         '''
         loop through query data by incrementing the elastic_request "from" parameter
         and calling search() for a new batch of results
@@ -159,6 +177,18 @@ class CaaSClient:
         else:
             self.logger.info('query results exhausted')
             return None
+
+    def get_next_results(self, last_sort_id_array):
+        '''
+        loop through query data by incrementing the elasticsearch request's
+        "search_after" parameter and calling search() for a new batch of results.
+
+        last_sort_id_array comes from response['hits'] and should be a list, even if
+        it's only a single element.
+        '''
+        self.elastic_request["search_after"] = last_sort_id_array
+        self.logger.info('getting results for next query batch by searching after sort id array: {}'.format(last_sort_id_array))
+        return self.search(elastic_request=self.elastic_request)
 
     def get_batch(self, ids=[]):
         '''

@@ -1,7 +1,7 @@
 # attempts to query legacy Time Inc's content-as-a-service (CaaS) datastore
 # and output results to a csv file if an output file is specified.
 # 6/1/18
-# updated 6/4/18
+# updated 6/27/18
 
 '''
 the query that is run by this script is determined by the elasticsearch request
@@ -35,18 +35,20 @@ class QueryData:
     '''class to extract, parse, and hold the specific data we're interested in from a CaaS query'''
 
     # our csv writer uses these to write the header row to our csv output file
-    fieldnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id',
+    fieldnames = ['brand', 'title', 'url', 'sort_id', 'caas_id', 'cms_id', 'gnlp_id',
                   'wnlp_id', 'gnlp_categories', 'wnlp_categories']
 
-    def __init__(self, query_response):
-        self.response = query_response
+    def __init__(self, entities, hits):
+        self.entities = entities
+        self.hits = hits
         self.records = self._init_records()
         self._extract_caas_data()
 
     def _init_records(self):
         return {
-            self.response[i]['$']['id']: {
-                'caas_id': self.response[i]['$']['id'],
+            self.entities[i]['$']['id']: {
+                'sort_id': self.hits[i]['sort'],
+                'caas_id': self.entities[i]['$']['id'],
                 'cms_id': '',
                 'title': '',
                 'url': '',
@@ -55,7 +57,7 @@ class QueryData:
                 'wnlp_id': '',
                 'gnlp_categories': {},
                 'wnlp_categories': {}
-            } for i in range(len(self.response))
+            } for i in range(len(self.entities))
         }
 
     def _extract_caas_data(self):
@@ -70,8 +72,8 @@ class QueryData:
         content = entry['web_article_content']
         '''
 
-        for i in range(len(self.response)):
-            entry = self.response[i]
+        for i in range(len(self.entities)):
+            entry = self.entities[i]
             caas_id = entry['$']['id']
             self.records[caas_id]['cms_id'] = entry['cms_id'] if 'cms_id' in entry.keys() else None
             self.records[caas_id]['title'] = entry['web_article_title'].strip() if 'web_article_title' in entry.keys() \
@@ -138,6 +140,10 @@ class QueryData:
 
         nlp_records = self._extract_nlp_categories(nlp_records, nlp_data, type)
         self._update_records_with_nlp_data(nlp_records, type)
+
+    def get_last_sort_id_array(self):
+        '''return the last sort id array from the response'''
+        return self.hits[-1]['sort']
 
 
 def _initialize_logger(name):
@@ -206,10 +212,10 @@ def capture_args():
 
 
 def drop_dupes(caas_id_set, data):
-    for key in data.keys():
-        caas_id = data[key]['caas_id']
+    for key in data.records.keys():
+        caas_id = data.records[key]['caas_id']
         if caas_id in caas_id_set:
-            del data[caas_id]
+            del data.records[caas_id]
         else:
             caas_id_set.add(caas_id)
 
@@ -252,7 +258,7 @@ if __name__ == '__main__':
 
     # conduct an initial search to see how many results are returned
     # from the query specified in elastic_search_request.json
-    response = caas_client.search()
+    entities, hits = caas_client.search()
 
     # we don't need to move past the initial search if we're not outputting to a file
     if output:
@@ -261,8 +267,8 @@ if __name__ == '__main__':
         # elasticsearch request's "size" param. if we are outputting to a file,
         # we need to extract the data from the current response, write it to our file,
         # then repeat with the next batch til we're done.
-        while response:
-            data = QueryData(response)
+        while entities:
+            data = QueryData(entities, hits)
             drop_dupes(caas_ids, data)
 
             # query CaaS for nlp data if it's available (technically this follows $nlp_id edges)
@@ -281,4 +287,4 @@ if __name__ == '__main__':
                 logger.warning('UnicodeEncodeError encountered when trying to write to file, skipping this batch...')
 
             logger.info(' - - - - - - - - - - - - - - - - - - - ')
-            response = caas_client.get_next_results()
+            entities, hits = caas_client.get_next_results(data.get_last_sort_id_array())
