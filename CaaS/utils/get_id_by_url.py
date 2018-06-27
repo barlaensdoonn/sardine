@@ -45,7 +45,7 @@ def update_sources(source_dict, source):
 
 def _get_cell_value(row, column_key):
     '''sleep here so we don't exceed the 1 request per second quota for the sheets API'''
-    sleep(0.25)
+    sleep(1)
     return content.cell(row, columns[column_key]).value
 
 
@@ -100,6 +100,7 @@ if __name__ == '__main__':
 
     # iterate through the worksheet's rows
     for i in range(1, content.row_count + 1):
+        print('checking row {}'.format(i))
         row = Row(source=_get_cell_value(i, 'source'), caas_id=_get_cell_value(i, 'caas_id'),
                   cms_id=_get_cell_value(i, 'cms_id'), url=_get_cell_value(i, 'url'))
 
