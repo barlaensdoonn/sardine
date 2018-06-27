@@ -109,7 +109,7 @@ class QueryData:
     def filter_out_empties(self):
         self.records = {key: value for key, value in self.records.items() if value['url']}
 
-    def filter_out_dupes(self, dupes):
+    def filter_out_training_urls(self, dupes):
         logger.warning('found duplicate urls, dropping them from the records')
         self.records = {key: value for key, value in self.records.items() if value['url'] not in dupes}
 
@@ -219,10 +219,10 @@ def get_existing_urls():
     '''this is a one time function to get duplicates from an existing file'''
     import pandas
 
-    csv_file = 'utils/Hair_Classification_Training_Corpus_Content_as_of_06042018.csv'
-    colnames = ['content_source', 'caas_id', 'cms_id', 'content_type', 'content_url', 'content_title']
-
+    csv_file = 'utils/Hair_Classification_Training_Corpus_Content_as_of_06262018.csv'
+    colnames = ['content_source', 'caas_id', 'cms_id', 'content_url', 'content_type', 'content_title']
     existing = pandas.read_csv(csv_file, names=colnames)
+
     return existing.content_url.tolist()
 
 
@@ -231,8 +231,8 @@ if __name__ == '__main__':
     logger = configure_logger()
     output = capture_args()
 
-    # get existing urls from Hair Training Classification Corpus spreadsheet
-    # dupes = get_existing_urls()
+    # get existing urls from a copy of Hair Training Classification Corpus spreadsheet
+    training_urls = get_existing_urls()
 
     # initialize our caas_client, which is a wrapper Brandon wrote around Time Inc's
     # caas-python-3-client that makes it a little easier for us to query the CaaS datastore.
@@ -254,13 +254,13 @@ if __name__ == '__main__':
         while response:
             data = QueryData(response)
 
-            # query CaaS for nlp data if it is available (technically this follows $nlp_id edges)
+            # query CaaS for nlp data if it's available (technically this follows $nlp_id edges)
             for type in ['google', 'watson']:
                 data.get_nlp_data(caas_client, type=type)
 
             # drop any records that don't have a url
             data.filter_out_empties()
-            # data.filter_out_dupes(dupes)
+            data.filter_out_training_urls(training_urls)
 
             # attempt to append this batch to our file, skip this batch
             # if we get a unicode error which happens occasionally on windows
