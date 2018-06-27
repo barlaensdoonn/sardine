@@ -34,7 +34,7 @@ log_file = 'query_log.log'
 class QueryData:
     '''class to extract, parse, and hold the specific data we're interested in from a CaaS query'''
 
-    # our csv writer use these to write the header row to our csv output file
+    # our csv writer uses these to write the header row to our csv output file
     fieldnames = ['brand', 'title', 'url', 'caas_id', 'cms_id', 'gnlp_id',
                   'wnlp_id', 'gnlp_categories', 'wnlp_categories']
 
@@ -110,7 +110,7 @@ class QueryData:
         self.records = {key: value for key, value in self.records.items() if value['url']}
 
     def filter_out_training_urls(self, dupes):
-        logger.warning('found duplicate urls, dropping them from the records')
+        logger.warning('found duplicate urls in the training set, dropping them from the records')
         self.records = {key: value for key, value in self.records.items() if value['url'] not in dupes}
 
     def get_nlp_data(self, client, type='google'):
@@ -205,6 +205,15 @@ def capture_args():
         return None
 
 
+def drop_dupes(caas_id_set, data):
+    for key in data.keys():
+        caas_id = data[key]['caas_id']
+        if caas_id in caas_id_set:
+            del data[caas_id]
+        else:
+            caas_id_set.add(caas_id)
+
+
 def write_to_file(outfile, records):
     '''append records to csv file'''
     logger.info('writing {} records to {}'.format(len(records), outfile))
@@ -247,22 +256,24 @@ if __name__ == '__main__':
 
     # we don't need to move past the initial search if we're not outputting to a file
     if output:
+        caas_ids = set()
         # caas_client.search() returns a fixed # of results specified in the
         # elasticsearch request's "size" param. if we are outputting to a file,
         # we need to extract the data from the current response, write it to our file,
         # then repeat with the next batch til we're done.
         while response:
             data = QueryData(response)
+            drop_dupes(caas_ids, data)
 
             # query CaaS for nlp data if it's available (technically this follows $nlp_id edges)
             for type in ['google', 'watson']:
                 data.get_nlp_data(caas_client, type=type)
 
-            # drop any records that don't have a url
+            # drop any records that don't have a url, or that already exist in the training set spreadsheet
             data.filter_out_empties()
             data.filter_out_training_urls(training_urls)
 
-            # attempt to append this batch to our file, skip this batch
+            # attempt to append this batch to our file. skip this batch
             # if we get a unicode error which happens occasionally on windows
             try:
                 write_to_file(output, data.records)
