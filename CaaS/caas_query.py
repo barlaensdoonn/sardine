@@ -109,10 +109,11 @@ class QueryData:
             self.records[caas_id][cat_key] = nlp_records[key].categories
 
     def filter_out_empties(self):
+        logger.info("filtering out records that don't have urls")
         self.records = {key: value for key, value in self.records.items() if value['url']}
 
     def filter_out_training_urls(self, dupes):
-        logger.warning('found duplicate urls in the training set, dropping them from the records')
+        logger.info('filtering out duplicate urls that already exist in the training set')
         self.records = {key: value for key, value in self.records.items() if value['url'] not in dupes}
 
     def get_nlp_data(self, client, type='google'):
